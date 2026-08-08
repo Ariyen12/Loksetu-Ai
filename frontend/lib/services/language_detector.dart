@@ -11,7 +11,22 @@ class LanguageDetectionResult {
 }
 
 class LanguageDetector {
-  /// Auto-detects language from recognized speech text or script ranges
+  /// Expanded Language Registry covering Northeast India & National Languages
+  static const Map<String, String> supportedLanguages = {
+    "Assamese (অসমীয়া)": "as-IN",
+    "Manipuri (মৈৈতৈলোন)": "mni-IN",
+    "Bengali (বাংলা)": "bn-IN",
+    "Bodo (बर')": "brx-IN",
+    "Nepali (नेपाली)": "ne-IN",
+    "Hindi (हिंदी)": "hi-IN",
+    "English": "en-IN",
+    "Khasi (Meghalaya)": "en-IN",
+    "Garo (Meghalaya)": "en-IN",
+    "Mizo (Mizoram)": "en-IN",
+    "Nagamese (Nagaland)": "en-IN",
+  };
+
+  /// Auto-detects spoken language from text script, character ranges, and phonetic terms
   static LanguageDetectionResult detect(String text) {
     if (text.trim().isEmpty) {
       return const LanguageDetectionResult(
@@ -23,79 +38,115 @@ class LanguageDetector {
 
     final trimmed = text.trim();
 
-    // Devanagari script (Hindi, Marathi, etc.)
+    // 1. Devanagari script (Hindi, Bodo, Nepali)
     final hasDevanagari = RegExp(r'[\u0900-\u097F]').hasMatch(trimmed);
     if (hasDevanagari) {
+      if (trimmed.contains('बर') || trimmed.contains('राव')) {
+        return const LanguageDetectionResult(
+          languageName: "Bodo (बर')",
+          localeId: "brx-IN",
+          scriptCode: "Deva",
+        );
+      }
+      if (trimmed.contains('छ' ) || trimmed.contains('नेपाल')) {
+        return const LanguageDetectionResult(
+          languageName: "Nepali (नेपाली)",
+          localeId: "ne-IN",
+          scriptCode: "Deva",
+        );
+      }
       return const LanguageDetectionResult(
-        languageName: "Hindi",
+        languageName: "Hindi (हिंदी)",
         localeId: "hi-IN",
         scriptCode: "Deva",
       );
     }
 
-    // Bengali & Assamese script
+    // 2. Bengali & Assamese script
     final hasBengaliAssamese = RegExp(r'[\u0980-\u09FF]').hasMatch(trimmed);
     if (hasBengaliAssamese) {
-      // Check specific Assamese characters (e.g. ৱ, ৰ)
-      if (trimmed.contains('ৱ') || trimmed.contains('ৰ') || trimmed.contains('কৈ')) {
+      if (trimmed.contains('ৱ') ||
+          trimmed.contains('ৰ') ||
+          trimmed.contains('কৈ') ||
+          trimmed.contains('অসম') ||
+          trimmed.contains('লাগে')) {
         return const LanguageDetectionResult(
-          languageName: "Assamese",
+          languageName: "Assamese (অসমীয়া)",
           localeId: "as-IN",
           scriptCode: "Beng",
         );
       }
       return const LanguageDetectionResult(
-        languageName: "Bengali",
+        languageName: "Bengali (বাংলা)",
         localeId: "bn-IN",
         scriptCode: "Beng",
       );
     }
 
-    // Meetei Mayek script (Manipuri)
+    // 3. Meetei Mayek script (Manipuri)
     final hasManipuri = RegExp(r'[\uABC0-\uABFF]').hasMatch(trimmed);
     if (hasManipuri) {
       return const LanguageDetectionResult(
-        languageName: "Manipuri",
+        languageName: "Manipuri (মৈৈতৈলোন)",
         localeId: "mni-IN",
         scriptCode: "Mtei",
       );
     }
 
-    // Check romanized Hindi/Bengali/Assamese keywords spoken in English script
+    // 4. Phonetic & Romanized Northeast & Indian Language Keywords
     final lower = trimmed.toLowerCase();
+
+    // Assamese Phonetics
     if (lower.contains("kheti") ||
-        lower.contains("kisan") ||
-        lower.contains("fasal") ||
-        lower.contains("yojana") ||
-        lower.contains("namaste") ||
-        lower.contains("kaise") ||
-        lower.contains("madad")) {
+        lower.contains("asomiya") ||
+        lower.contains("laage") ||
+        lower.contains("dorkar") ||
+        lower.contains("dhan") ||
+        lower.contains("kela")) {
       return const LanguageDetectionResult(
-        languageName: "Hindi",
-        localeId: "hi-IN",
-        scriptCode: "Deva",
+        languageName: "Assamese (অসমীয়া)",
+        localeId: "as-IN",
+        scriptCode: "Beng",
       );
     }
 
-    if (lower.contains("krishi") ||
-        lower.contains("chash") ||
-        lower.contains("dhan") ||
-        lower.contains("shasya") ||
-        lower.contains("sarkar")) {
+    // Manipuri Phonetics
+    if (lower.contains("meitei") ||
+        lower.contains("manipuri") ||
+        lower.contains("shumang") ||
+        lower.contains("yamna")) {
       return const LanguageDetectionResult(
-        languageName: "Bengali",
+        languageName: "Manipuri (মৈৈতৈলোন)",
+        localeId: "mni-IN",
+        scriptCode: "Mtei",
+      );
+    }
+
+    // Bengali Phonetics
+    if (lower.contains("chash") ||
+        lower.contains("shasya") ||
+        lower.contains("khad") ||
+        lower.contains("amader") ||
+        lower.contains("jonno")) {
+      return const LanguageDetectionResult(
+        languageName: "Bengali (বাংলা)",
         localeId: "bn-IN",
         scriptCode: "Beng",
       );
     }
 
-    if (lower.contains("kheti") ||
-        lower.contains("kheti-baati") ||
-        lower.contains("sarkari")) {
+    // Hindi Phonetics
+    if (lower.contains("kisan") ||
+        lower.contains("fasal") ||
+        lower.contains("yojana") ||
+        lower.contains("namaste") ||
+        lower.contains("kaise") ||
+        lower.contains("madad") ||
+        lower.contains("bhai")) {
       return const LanguageDetectionResult(
-        languageName: "Assamese",
-        localeId: "as-IN",
-        scriptCode: "Beng",
+        languageName: "Hindi (हिंदी)",
+        localeId: "hi-IN",
+        scriptCode: "Deva",
       );
     }
 

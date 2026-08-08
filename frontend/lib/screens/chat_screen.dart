@@ -29,20 +29,14 @@ class _ChatScreenState extends State<ChatScreen>
 
   String _selectedLanguage = "English";
 
-  final Map<String, String> _languages = {
-    "English": "en-IN",
-    "Hindi": "hi-IN",
-    "Bengali": "bn-IN",
-    "Assamese": "as-IN",
-    "Manipuri": "mni-IN",
-  };
+  final Map<String, String> _languages = LanguageDetector.supportedLanguages;
 
   final List<Map<String, dynamic>> _messages = [
     {
       "id": "init_chat",
       "sender": "ai",
       "text":
-          "Namaste! 👋 I am LokSetu Open AI Assistant.\n\nAsk me ANYTHING in your native language — I will answer accurately, provide Gemini & ChatGPT research links, and read with human voice.",
+          "Namaste! 👋 I am LokSetu Multilingual AI Assistant.\n\nPress the mic button and speak in any language (Assamese, Manipuri, Bengali, Bodo, Nepali, Hindi, English). I will auto-detect your language and answer with high-accuracy detail.",
       "links": <String>[],
     },
   ];
@@ -300,15 +294,25 @@ class _ChatScreenState extends State<ChatScreen>
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Row(
+        title: Row(
           children: [
-            CircleAvatar(
-              radius: 18,
-              backgroundColor: Colors.blue,
-              child: Icon(Icons.auto_awesome, color: Colors.white, size: 18),
+            ClipOval(
+              child: Image.asset(
+                'assets/images/loksetu_logo.png',
+                width: 34,
+                height: 34,
+                fit: BoxFit.contain,
+                errorBuilder: (context, error, stackTrace) {
+                  return const CircleAvatar(
+                    radius: 17,
+                    backgroundColor: Colors.blue,
+                    child: Icon(Icons.auto_awesome, color: Colors.white, size: 16),
+                  );
+                },
+              ),
             ),
-            SizedBox(width: 10),
-            Text("LokSetu AI Voice Chatbot"),
+            const SizedBox(width: 10),
+            const Text("LokSetu AI Voice Chatbot"),
           ],
         ),
         actions: [
@@ -319,7 +323,7 @@ class _ChatScreenState extends State<ChatScreen>
             items: _languages.keys.map((language) {
               return DropdownMenuItem(
                 value: language,
-                child: Text(language, style: const TextStyle(fontSize: 13)),
+                child: Text(language, style: const TextStyle(fontSize: 12)),
               );
             }).toList(),
             onChanged: (value) {
@@ -543,7 +547,7 @@ class _ChatScreenState extends State<ChatScreen>
                       onSubmitted: (_) => _sendMessage(),
                       decoration: InputDecoration(
                         hintText: _isListening
-                            ? "Listening (Ask ANYTHING)..."
+                            ? "Listening (Speak in ANY language)..."
                             : "Ask ANY question or speak...",
                         filled: true,
                         fillColor: Colors.grey.shade100,

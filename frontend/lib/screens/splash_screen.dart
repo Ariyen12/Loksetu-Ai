@@ -1,4 +1,3 @@
-import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'home_screen.dart';
 
@@ -19,10 +18,10 @@ class _SplashScreenState extends State<SplashScreen>
     super.initState();
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(seconds: 4),
+      duration: const Duration(seconds: 3),
     )..repeat(reverse: true);
 
-    _pulseAnimation = Tween<double>(begin: 0.95, end: 1.08).animate(
+    _pulseAnimation = Tween<double>(begin: 0.96, end: 1.05).animate(
       CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
     );
   }
@@ -51,16 +50,16 @@ class _SplashScreenState extends State<SplashScreen>
         child: SafeArea(
           child: Stack(
             children: [
-              // Glowing ambient background circles
+              // Ambient glow circles
               Positioned(
                 top: -80,
                 right: -60,
                 child: Container(
-                  width: 250,
-                  height: 250,
+                  width: 260,
+                  height: 260,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: Colors.blue.withOpacity(0.25),
+                    color: Colors.orange.withOpacity(0.2),
                   ),
                 ),
               ),
@@ -72,98 +71,82 @@ class _SplashScreenState extends State<SplashScreen>
                   height: 280,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: Colors.cyan.withOpacity(0.2),
+                    color: Colors.green.withOpacity(0.2),
                   ),
                 ),
               ),
 
-              // Floating Language Badges (Assamese, Hindi, Bengali, Manipuri, English)
+              // Floating Language Badges (Assamese, Manipuri, Bengali, Bodo, Nepali, Hindi, English)
               Positioned(
-                top: 70,
-                left: 30,
-                child: _floatingLanguageBadge("অসমীয়া", Colors.amber),
+                top: 50,
+                left: 20,
+                child: _floatingLanguageBadge("অসমীয়া (Assamese)", Colors.amber),
               ),
               Positioned(
-                top: 130,
-                right: 35,
-                child: _floatingLanguageBadge("हिंदी", Colors.orangeAccent),
+                top: 110,
+                right: 20,
+                child: _floatingLanguageBadge("মৈৈতৈলোন (Manipuri)", Colors.orangeAccent),
               ),
               Positioned(
                 bottom: 230,
-                left: 25,
-                child: _floatingLanguageBadge("বাংলা", Colors.cyanAccent),
+                left: 20,
+                child: _floatingLanguageBadge("বাংলা (Bengali)", Colors.cyanAccent),
               ),
               Positioned(
-                bottom: 180,
-                right: 30,
-                child: _floatingLanguageBadge("মৈৈতৈলোন", Colors.pinkAccent),
+                bottom: 170,
+                right: 20,
+                child: _floatingLanguageBadge("बर' (Bodo)", Colors.pinkAccent),
               ),
 
-              // MAIN CENTER CONTENT
+              // MAIN CONTENT
               Center(
                 child: SingleChildScrollView(
                   padding: const EdgeInsets.symmetric(horizontal: 24),
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      // ANIMATED GLOWING AI ORB
+                      // OFFICIAL LOKSETU LOGO DISPLAY
                       ScaleTransition(
                         scale: _pulseAnimation,
                         child: Container(
-                          width: 140,
-                          height: 140,
+                          padding: const EdgeInsets.all(16),
                           decoration: BoxDecoration(
+                            color: Colors.white,
                             shape: BoxShape.circle,
-                            gradient: const LinearGradient(
-                              colors: [
-                                Color(0xFF38BDF8),
-                                Color(0xFF2563EB),
-                                Color(0xFF1D4ED8),
-                              ],
-                            ),
                             boxShadow: [
                               BoxShadow(
-                                color: const Color(0xFF38BDF8).withOpacity(0.6),
-                                blurRadius: 40,
-                                spreadRadius: 8,
+                                color: Colors.orange.withOpacity(0.4),
+                                blurRadius: 35,
+                                spreadRadius: 6,
+                              ),
+                              BoxShadow(
+                                color: Colors.green.withOpacity(0.3),
+                                blurRadius: 25,
+                                spreadRadius: 4,
                               ),
                             ],
                           ),
-                          child: Stack(
-                            alignment: Alignment.center,
-                            children: [
-                              const Icon(
-                                Icons.auto_awesome,
-                                size: 70,
-                                color: Colors.white,
-                              ),
-                              Positioned(
-                                bottom: 12,
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: 8, vertical: 2),
-                                  decoration: BoxDecoration(
-                                    color: Colors.black45,
-                                    borderRadius: BorderRadius.circular(10),
-                                  ),
-                                  child: const Text(
-                                    "AI Powered",
-                                    style: TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 10,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ],
+                          child: ClipOval(
+                            child: Image.asset(
+                              'assets/images/loksetu_logo.png',
+                              width: 140,
+                              height: 140,
+                              fit: BoxFit.contain,
+                              errorBuilder: (context, error, stackTrace) {
+                                return const Icon(
+                                  Icons.auto_awesome,
+                                  size: 80,
+                                  color: Color(0xFF2563EB),
+                                );
+                              },
+                            ),
                           ),
                         ),
                       ),
 
-                      const SizedBox(height: 35),
+                      const SizedBox(height: 30),
 
-                      // TITLE
+                      // APP TITLE
                       const Text(
                         "LokSetu AI",
                         style: TextStyle(
@@ -173,7 +156,7 @@ class _SplashScreenState extends State<SplashScreen>
                           letterSpacing: 1.2,
                           shadows: [
                             Shadow(
-                              color: Colors.blueAccent,
+                              color: Colors.orangeAccent,
                               blurRadius: 15,
                             ),
                           ],
@@ -194,17 +177,17 @@ class _SplashScreenState extends State<SplashScreen>
                           ),
                         ),
                         child: Text(
-                          "Breaking Language Barriers Across Northeast India",
+                          "Connecting Multilingual Citizens & Farmers Across Northeast India",
                           textAlign: TextAlign.center,
                           style: TextStyle(
-                            fontSize: 14,
+                            fontSize: 13,
                             fontWeight: FontWeight.w500,
                             color: Colors.white.withOpacity(0.9),
                           ),
                         ),
                       ),
 
-                      const SizedBox(height: 35),
+                      const SizedBox(height: 28),
 
                       // SECTOR BADGES STRIP
                       Wrap(
@@ -212,14 +195,14 @@ class _SplashScreenState extends State<SplashScreen>
                         spacing: 8,
                         runSpacing: 8,
                         children: const [
-                          _SectorPill(label: "🌾 Farmers & Agri", color: Colors.orange),
+                          _SectorPill(label: "🌾 Farmers & Agriculture", color: Colors.orange),
                           _SectorPill(label: "🏥 Healthcare", color: Colors.pinkAccent),
                           _SectorPill(label: "🏛️ Governance", color: Colors.lightBlue),
                           _SectorPill(label: "🎓 Education", color: Colors.teal),
                         ],
                       ),
 
-                      const SizedBox(height: 50),
+                      const SizedBox(height: 45),
 
                       // ANIMATED GET STARTED BUTTON WITH GLOW RIPPLE
                       ScaleTransition(
@@ -229,7 +212,7 @@ class _SplashScreenState extends State<SplashScreen>
                             borderRadius: BorderRadius.circular(35),
                             boxShadow: [
                               BoxShadow(
-                                color: Colors.cyanAccent.withOpacity(0.5),
+                                color: Colors.orangeAccent.withOpacity(0.5),
                                 blurRadius: 25,
                                 spreadRadius: 2,
                               ),
@@ -297,15 +280,15 @@ class _SplashScreenState extends State<SplashScreen>
     return ScaleTransition(
       scale: _pulseAnimation,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         decoration: BoxDecoration(
           color: Colors.white.withOpacity(0.15),
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(18),
           border: Border.all(color: color.withOpacity(0.6), width: 1.5),
           boxShadow: [
             BoxShadow(
               color: color.withOpacity(0.3),
-              blurRadius: 12,
+              blurRadius: 10,
             ),
           ],
         ),
@@ -314,7 +297,7 @@ class _SplashScreenState extends State<SplashScreen>
           style: const TextStyle(
             color: Colors.white,
             fontWeight: FontWeight.bold,
-            fontSize: 13,
+            fontSize: 12,
           ),
         ),
       ),

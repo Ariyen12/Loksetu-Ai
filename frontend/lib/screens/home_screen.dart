@@ -29,7 +29,7 @@ class HomeScreen extends StatelessWidget {
         child: SafeArea(
           child: Stack(
             children: [
-              // Background Ambient Blur Circle
+              // Ambient Blur Circles
               Positioned(
                 top: -60,
                 right: -40,
@@ -58,31 +58,52 @@ class HomeScreen extends StatelessWidget {
               ListView(
                 padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
                 children: [
-                  const SizedBox(height: 10),
+                  const SizedBox(height: 6),
 
-                  Text(
-                    "Namaste 👋",
-                    style: TextStyle(
-                      color: AppColors.textDark,
-                      fontSize: 18,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
+                  // TOP HEADER WITH OFFICIAL LOKSETU LOGO
                   Row(
                     children: [
-                      const Text(
-                        "LokSetu AI",
-                        style: TextStyle(
-                          fontSize: 32,
-                          fontWeight: FontWeight.bold,
-                          color: Color(0xFF0F172A),
+                      ClipOval(
+                        child: Image.asset(
+                          'assets/images/loksetu_logo.png',
+                          width: 48,
+                          height: 48,
+                          fit: BoxFit.contain,
+                          errorBuilder: (context, error, stackTrace) {
+                            return const CircleAvatar(
+                              radius: 24,
+                              backgroundColor: Color(0xFF2563EB),
+                              child: Icon(Icons.auto_awesome, color: Colors.white),
+                            );
+                          },
                         ),
+                      ),
+                      const SizedBox(width: 12),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            "LokSetu AI",
+                            style: TextStyle(
+                              fontSize: 26,
+                              fontWeight: FontWeight.bold,
+                              color: const Color(0xFF0F172A),
+                            ),
+                          ),
+                          const Text(
+                            "Connecting Multilingual Citizens & Farmers",
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: Colors.black54,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
                       ),
                       const Spacer(),
                       Container(
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 12, vertical: 6),
+                            horizontal: 10, vertical: 5),
                         decoration: BoxDecoration(
                           color: Colors.blue.shade600,
                           borderRadius: BorderRadius.circular(20),
@@ -90,13 +111,13 @@ class HomeScreen extends StatelessWidget {
                         child: const Row(
                           children: [
                             Icon(Icons.record_voice_over,
-                                color: Colors.white, size: 16),
-                            SizedBox(width: 6),
+                                color: Colors.white, size: 14),
+                            SizedBox(width: 4),
                             Text(
                               "Voice Enabled",
                               style: TextStyle(
                                 color: Colors.white,
-                                fontSize: 12,
+                                fontSize: 11,
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
@@ -107,9 +128,9 @@ class HomeScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 20),
 
-                  // AI ORB BANNER
+                  // AI BANNER CARD
                   Container(
-                    padding: const EdgeInsets.all(20),
+                    padding: const EdgeInsets.all(18),
                     decoration: BoxDecoration(
                       gradient: const LinearGradient(
                         colors: [Color(0xFF1E40AF), Color(0xFF3B82F6)],
@@ -126,37 +147,46 @@ class HomeScreen extends StatelessWidget {
                     child: Row(
                       children: [
                         Container(
-                          width: 64,
-                          height: 64,
+                          width: 60,
+                          height: 60,
+                          padding: const EdgeInsets.all(8),
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
-                            color: Colors.white.withOpacity(0.2),
-                          ),
-                          child: const Icon(
-                            Icons.auto_awesome,
                             color: Colors.white,
-                            size: 36,
+                          ),
+                          child: ClipOval(
+                            child: Image.asset(
+                              'assets/images/loksetu_logo.png',
+                              fit: BoxFit.contain,
+                              errorBuilder: (context, error, stackTrace) {
+                                return const Icon(
+                                  Icons.auto_awesome,
+                                  color: Color(0xFF2563EB),
+                                  size: 30,
+                                );
+                              },
+                            ),
                           ),
                         ),
-                        const SizedBox(width: 16),
+                        const SizedBox(width: 14),
                         const Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                "Smart Citizen Assistant",
+                                "Smart Citizen & Farmer AI",
                                 style: TextStyle(
                                   color: Colors.white,
-                                  fontSize: 18,
+                                  fontSize: 17,
                                   fontWeight: FontWeight.bold,
                                 ),
                               ),
                               SizedBox(height: 4),
                               Text(
-                                "Top 3 preset queries & voice AI in your native language",
+                                "High-accuracy answers, research links & human voice in Northeast Indian languages",
                                 style: TextStyle(
                                   color: Colors.white70,
-                                  fontSize: 13,
+                                  fontSize: 12,
                                 ),
                               ),
                             ],
@@ -228,7 +258,7 @@ class HomeScreen extends StatelessWidget {
                     color: const Color(0xFFD97706),
                     screen: const AgricultureScreen(),
                     presets: [
-                      "PM-Kisan Installment & e-KYC",
+                      "Pest & Insects Control / PM-Kisan",
                       "Crop Damage Claim (PMFBY)",
                       "Kisan Call Center & Soil Health",
                     ],
