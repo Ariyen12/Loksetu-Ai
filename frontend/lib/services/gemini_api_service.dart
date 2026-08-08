@@ -4,12 +4,10 @@ import 'package:http/http.dart' as http;
 
 class GeminiAPIResponse {
   final String text;
-  final List<String> links;
   final bool isFromGoogleAPI;
 
   GeminiAPIResponse({
     required this.text,
-    required this.links,
     required this.isFromGoogleAPI,
   });
 }
@@ -18,7 +16,7 @@ class GeminiAPIService {
   // Configurable Google Gemini API Key
   static String userApiKey = "";
 
-  /// Queries Google Gemini API (gemini-1.5-flash) for live real-time answers
+  /// Queries Google Gemini API (gemini-1.5-flash) for exact point-blank answers
   static Future<GeminiAPIResponse?> queryGoogleGeminiAPI({
     required String prompt,
     required String language,
@@ -34,9 +32,8 @@ class GeminiAPIService {
           'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=$keyToUse');
 
       final systemPrompt =
-          "You are LokSetu AI, a smart multilingual assistant for farmers and citizens across India. "
-          "Answer the user's question accurately in short, crisp 2-3 bullet points in $language. "
-          "Do not give long paragraphs. Keep it sweet, direct, and concise.";
+          "You are LokSetu AI. Answer the user's question directly in $language with the EXACT, point-blank answer in 1 to 2 short sentences. "
+          "Do NOT include any preamble, intros, filler text, or headers like 'Comprehensive Factual Analysis' or 'Factual Overview'. Give ONLY the direct answer.";
 
       final body = jsonEncode({
         "contents": [
@@ -47,8 +44,8 @@ class GeminiAPIService {
           }
         ],
         "generationConfig": {
-          "temperature": 0.4,
-          "maxOutputTokens": 300,
+          "temperature": 0.2,
+          "maxOutputTokens": 200,
         }
       });
 
@@ -69,11 +66,6 @@ class GeminiAPIService {
             if (answerText != null && answerText.trim().isNotEmpty) {
               return GeminiAPIResponse(
                 text: answerText.trim(),
-                links: [
-                  "https://gemini.google.com/search?q=${Uri.encodeComponent(prompt)} (Google Gemini AI)",
-                  "https://chatgpt.com (ChatGPT)",
-                  "https://services.india.gov.in (Official Govt Portal)"
-                ],
                 isFromGoogleAPI: true,
               );
             }
