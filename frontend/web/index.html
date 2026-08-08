@@ -8,8 +8,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <meta name="description" content="LokSetu AI - Multilingual Citizen & Farmer Platform">
 
-  <!-- Cache Control (Prevent Stale Code) -->
-  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+  <!-- Aggressive Cache Control (Force Browser to Load Latest Build) -->
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate, max-age=0" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
 
@@ -17,13 +17,12 @@
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black">
   <meta name="apple-mobile-web-app-title" content="LokSetu AI">
-  <link rel="apple-touch-icon" href="favicon.png">
+  <link rel="apple-touch-icon" href="favicon.png?v=2">
 
   <!-- Favicon -->
-  <link rel="icon" type="image/png" href="favicon.png"/>
+  <link rel="icon" type="image/png" href="favicon.png?v=2"/>
 
   <title>LokSetu AI - Citizen & Farmer Assistant</title>
-  <link rel="manifest" href="manifest.json">
 
   <style>
     body {
@@ -46,7 +45,7 @@
       background: linear-gradient(135deg, #0F172A 0%, #1E3A8A 100%);
       color: white;
       z-index: 99999;
-      transition: opacity 0.5s ease;
+      transition: opacity 0.4s ease;
     }
 
     #loading-logo {
@@ -81,12 +80,17 @@
   </style>
 
   <script>
-    // Force unregister stale service worker to ensure latest code loads
+    // Force unregister ALL service workers & clear caches
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.getRegistrations().then(function(registrations) {
         for(let registration of registrations) {
           registration.unregister();
         }
+      });
+    }
+    if ('caches' in window) {
+      caches.keys().then(function(names) {
+        for (let name of names) caches.delete(name);
       });
     }
 
@@ -174,7 +178,7 @@
       const el = document.getElementById('loading-container');
       if (el) {
         el.style.opacity = '0';
-        setTimeout(() => el.remove(), 500);
+        setTimeout(() => el.remove(), 400);
       }
     });
   </script>
@@ -182,12 +186,12 @@
 <body>
   <!-- LOADING SCREEN WITH OFFICIAL LOKSETU LOGO -->
   <div id="loading-container">
-    <img id="loading-logo" src="favicon.png" alt="LokSetu AI Logo" />
+    <img id="loading-logo" src="favicon.png?v=2" alt="LokSetu AI Logo" />
     <h2 style="margin: 0 0 16px 0; font-size: 26px; font-weight: 800; letter-spacing: 1px;">LokSetu AI</h2>
     <p style="margin: 0 0 24px 0; font-size: 13px; color: #94A3B8;">Connecting Multilingual Citizens & Farmers</p>
     <div class="spinner"></div>
   </div>
 
-  <script src="flutter_bootstrap.js" async></script>
+  <script src="flutter_bootstrap.js?v=20260809_2" async></script>
 </body>
 </html>
