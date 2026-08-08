@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../widgets/loksetu_logo_widget.dart';
 import 'home_screen.dart';
 
 class SplashScreen extends StatefulWidget {
@@ -76,7 +77,7 @@ class _SplashScreenState extends State<SplashScreen>
                 ),
               ),
 
-              // Floating Language Badges (Assamese, Manipuri, Bengali, Bodo, Nepali, Hindi, English)
+              // Floating Language Badges
               Positioned(
                 top: 50,
                 left: 20,
@@ -105,11 +106,11 @@ class _SplashScreenState extends State<SplashScreen>
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      // OFFICIAL LOKSETU LOGO DISPLAY
+                      // GUARANTEED OFFICIAL LOKSETU LOGO
                       ScaleTransition(
                         scale: _pulseAnimation,
                         child: Container(
-                          padding: const EdgeInsets.all(16),
+                          padding: const EdgeInsets.all(12),
                           decoration: BoxDecoration(
                             color: Colors.white,
                             shape: BoxShape.circle,
@@ -126,19 +127,11 @@ class _SplashScreenState extends State<SplashScreen>
                               ),
                             ],
                           ),
-                          child: ClipOval(
-                            child: Image.asset(
-                              'assets/images/loksetu_logo.png',
+                          child: const ClipOval(
+                            child: LokSetuLogoWidget(
                               width: 140,
                               height: 140,
                               fit: BoxFit.contain,
-                              errorBuilder: (context, error, stackTrace) {
-                                return const Icon(
-                                  Icons.auto_awesome,
-                                  size: 80,
-                                  color: Color(0xFF2563EB),
-                                );
-                              },
                             ),
                           ),
                         ),

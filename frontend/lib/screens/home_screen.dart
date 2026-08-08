@@ -2,6 +2,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 
 import '../constants/app_colors.dart';
+import '../widgets/loksetu_logo_widget.dart';
 import 'healthcare_screen.dart';
 import 'education_screen.dart';
 import 'governance_screen.dart';
@@ -60,22 +61,14 @@ class HomeScreen extends StatelessWidget {
                 children: [
                   const SizedBox(height: 6),
 
-                  // TOP HEADER WITH OFFICIAL LOKSETU LOGO
+                  // TOP HEADER WITH GUARANTEED LOKSETU LOGO
                   Row(
                     children: [
-                      ClipOval(
-                        child: Image.asset(
-                          'assets/images/loksetu_logo.png',
+                      const ClipOval(
+                        child: LokSetuLogoWidget(
                           width: 48,
                           height: 48,
                           fit: BoxFit.contain,
-                          errorBuilder: (context, error, stackTrace) {
-                            return const CircleAvatar(
-                              radius: 24,
-                              backgroundColor: Color(0xFF2563EB),
-                              child: Icon(Icons.auto_awesome, color: Colors.white),
-                            );
-                          },
                         ),
                       ),
                       const SizedBox(width: 12),
@@ -128,7 +121,7 @@ class HomeScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 20),
 
-                  // AI BANNER CARD
+                  // AI BANNER CARD WITH LOGO
                   Container(
                     padding: const EdgeInsets.all(18),
                     decoration: BoxDecoration(
@@ -149,22 +142,16 @@ class HomeScreen extends StatelessWidget {
                         Container(
                           width: 60,
                           height: 60,
-                          padding: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(
+                          padding: const EdgeInsets.all(6),
+                          decoration: const BoxDecoration(
                             shape: BoxShape.circle,
                             color: Colors.white,
                           ),
-                          child: ClipOval(
-                            child: Image.asset(
-                              'assets/images/loksetu_logo.png',
+                          child: const ClipOval(
+                            child: LokSetuLogoWidget(
+                              width: 50,
+                              height: 50,
                               fit: BoxFit.contain,
-                              errorBuilder: (context, error, stackTrace) {
-                                return const Icon(
-                                  Icons.auto_awesome,
-                                  color: Color(0xFF2563EB),
-                                  size: 30,
-                                );
-                              },
                             ),
                           ),
                         ),

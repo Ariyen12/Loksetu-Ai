@@ -4,6 +4,7 @@ import 'package:speech_to_text/speech_to_text.dart' as stt;
 import '../services/gemini_voice_engine.dart';
 import '../services/language_detector.dart';
 import '../services/ai_service.dart';
+import '../widgets/loksetu_logo_widget.dart';
 
 class ChatScreen extends StatefulWidget {
   const ChatScreen({super.key});
@@ -296,19 +297,11 @@ class _ChatScreenState extends State<ChatScreen>
       appBar: AppBar(
         title: Row(
           children: [
-            ClipOval(
-              child: Image.asset(
-                'assets/images/loksetu_logo.png',
+            const ClipOval(
+              child: LokSetuLogoWidget(
                 width: 34,
                 height: 34,
                 fit: BoxFit.contain,
-                errorBuilder: (context, error, stackTrace) {
-                  return const CircleAvatar(
-                    radius: 17,
-                    backgroundColor: Colors.blue,
-                    child: Icon(Icons.auto_awesome, color: Colors.white, size: 16),
-                  );
-                },
               ),
             ),
             const SizedBox(width: 10),
