@@ -29,131 +29,209 @@ class HomeScreen extends StatelessWidget {
         child: SafeArea(
           child: Stack(
             children: [
-              // Background circle
+              // Background Ambient Blur Circle
               Positioned(
                 top: -60,
                 right: -40,
                 child: Container(
-                  width: 180,
-                  height: 180,
+                  width: 200,
+                  height: 200,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     color: Colors.blue.withOpacity(0.18),
                   ),
                 ),
               ),
-
-              // Background circle
               Positioned(
-                bottom: 100,
+                bottom: 80,
                 left: -60,
                 child: Container(
-                  width: 150,
-                  height: 150,
+                  width: 170,
+                  height: 170,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: Colors.cyan.withOpacity(0.12),
+                    color: Colors.cyan.withOpacity(0.14),
                   ),
                 ),
               ),
 
               ListView(
-                padding: const EdgeInsets.all(24),
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
                 children: [
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 10),
 
                   Text(
-                    "Good Evening 👋",
+                    "Namaste 👋",
                     style: TextStyle(
                       color: AppColors.textDark,
                       fontSize: 18,
+                      fontWeight: FontWeight.w500,
                     ),
                   ),
-
-                  const SizedBox(height: 5),
-
-                  const Text(
-                    "LokSetu AI",
-                    style: TextStyle(
-                      fontSize: 34,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-
-                  const SizedBox(height: 35),
-
-                  // AI ORB
-                  Center(
-                    child: Container(
-                      width: 120,
-                      height: 120,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        gradient: const LinearGradient(
-                          colors: [
-                            Color(0xFF2563EB),
-                            Color(0xFF38BDF8),
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      const Text(
+                        "LokSetu AI",
+                        style: TextStyle(
+                          fontSize: 32,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF0F172A),
+                        ),
+                      ),
+                      const Spacer(),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: Colors.blue.shade600,
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: const Row(
+                          children: [
+                            Icon(Icons.record_voice_over,
+                                color: Colors.white, size: 16),
+                            SizedBox(width: 6),
+                            Text(
+                              "Voice Enabled",
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
                           ],
                         ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.blue.withOpacity(0.45),
-                            blurRadius: 35,
-                          ),
-                        ],
                       ),
-                      child: const Icon(
-                        Icons.auto_awesome,
-                        color: Colors.white,
-                        size: 60,
-                      ),
-                    ),
+                    ],
                   ),
-
                   const SizedBox(height: 20),
 
-                  const Center(
-                    child: Text(
-                      "Breaking Language Barriers",
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w500,
+                  // AI ORB BANNER
+                  Container(
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFF1E40AF), Color(0xFF3B82F6)],
                       ),
+                      borderRadius: BorderRadius.circular(24),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.blue.withOpacity(0.3),
+                          blurRadius: 20,
+                          offset: const Offset(0, 8),
+                        ),
+                      ],
+                    ),
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 64,
+                          height: 64,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: Colors.white.withOpacity(0.2),
+                          ),
+                          child: const Icon(
+                            Icons.auto_awesome,
+                            color: Colors.white,
+                            size: 36,
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        const Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                "Smart Citizen Assistant",
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              SizedBox(height: 4),
+                              Text(
+                                "Top 3 preset queries & voice AI in your native language",
+                                style: TextStyle(
+                                  color: Colors.white70,
+                                  fontSize: 13,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
                     ),
                   ),
 
-                  const SizedBox(height: 35),
+                  const SizedBox(height: 28),
 
-                  // HEALTHCARE
-                  _glassCard(
-                    context,
-                    Icons.local_hospital,
-                    "Healthcare",
-                    const HealthcareScreen(),
+                  const Text(
+                    "Select Category or Pick a Query:",
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF1E293B),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+
+                  // 1. HEALTHCARE
+                  _categoryCardWithPresets(
+                    context: context,
+                    icon: Icons.local_hospital,
+                    title: "Healthcare",
+                    color: const Color(0xFFE11D48),
+                    screen: const HealthcareScreen(),
+                    presets: [
+                      "Ayushman Bharat Card (PM-JAY)",
+                      "Free Doctor Teleconsultation",
+                      "Maternal & Child Care (PMMVY)",
+                    ],
                   ),
 
-                  // GOVERNANCE
-                  _glassCard(
-                    context,
-                    Icons.account_balance,
-                    "Governance",
-                    const GovernanceScreen(),
+                  // 2. GOVERNANCE
+                  _categoryCardWithPresets(
+                    context: context,
+                    icon: Icons.account_balance,
+                    title: "Governance",
+                    color: const Color(0xFF2563EB),
+                    screen: const GovernanceScreen(),
+                    presets: [
+                      "Apply Income / Caste Certificate",
+                      "Ration Card e-KYC & Status",
+                      "Government Scheme Bank Link (DBT)",
+                    ],
                   ),
 
-                  // EDUCATION
-                  _glassCard(
-                    context,
-                    Icons.school,
-                    "Education",
-                    const EducationScreen(),
+                  // 3. EDUCATION
+                  _categoryCardWithPresets(
+                    context: context,
+                    icon: Icons.school,
+                    title: "Education",
+                    color: const Color(0xFF059669),
+                    screen: const EducationScreen(),
+                    presets: [
+                      "Post-Matric Scholarships",
+                      "Free Skill Training (PMKVY)",
+                      "RTE Free School Admission (25%)",
+                    ],
                   ),
 
-                  // AGRICULTURE
-                  _glassCard(
-                    context,
-                    Icons.agriculture,
-                    "Agriculture",
-                    const AgricultureScreen(),
+                  // 4. AGRICULTURE
+                  _categoryCardWithPresets(
+                    context: context,
+                    icon: Icons.agriculture,
+                    title: "Agriculture",
+                    color: const Color(0xFFD97706),
+                    screen: const AgricultureScreen(),
+                    presets: [
+                      "PM-Kisan Installment & e-KYC",
+                      "Crop Damage Claim (PMFBY)",
+                      "Kisan Call Center & Soil Health",
+                    ],
                   ),
 
                   const SizedBox(height: 100),
@@ -164,9 +242,10 @@ class HomeScreen extends StatelessWidget {
         ),
       ),
 
-      // TALK BUTTON
+      // GENERAL VOICE TALK BUTTON
       floatingActionButton: FloatingActionButton.extended(
         backgroundColor: AppColors.secondary,
+        elevation: 6,
         onPressed: () {
           Navigator.push(
             context,
@@ -175,71 +254,198 @@ class HomeScreen extends StatelessWidget {
             ),
           );
         },
-        icon: const Icon(Icons.mic),
-        label: const Text("Talk"),
+        icon: const Icon(Icons.mic, color: Colors.white),
+        label: const Text(
+          "Voice Chatbot",
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+        ),
       ),
     );
   }
 
-  // GLASS CARD
-  Widget _glassCard(
-    BuildContext context,
-    IconData icon,
-    String title,
-    Widget screen,
-  ) {
+  Widget _categoryCardWithPresets({
+    required BuildContext context,
+    required IconData icon,
+    required String title,
+    required Color color,
+    required Widget screen,
+    required List<String> presets,
+  }) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 18),
-      child: GestureDetector(
-        onTap: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => screen,
-            ),
-          );
-        },
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(22),
-          child: BackdropFilter(
-            filter: ImageFilter.blur(
-              sigmaX: 18,
-              sigmaY: 18,
-            ),
-            child: Container(
-              padding: const EdgeInsets.all(18),
-              decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.30),
-                borderRadius: BorderRadius.circular(22),
-                border: Border.all(
-                  color: Colors.white.withOpacity(0.45),
+      padding: const EdgeInsets.only(bottom: 20),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(22),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
+          child: Container(
+            padding: const EdgeInsets.all(18),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.85),
+              borderRadius: BorderRadius.circular(22),
+              border: Border.all(color: color.withOpacity(0.3), width: 1.5),
+              boxShadow: [
+                BoxShadow(
+                  color: color.withOpacity(0.08),
+                  blurRadius: 15,
+                  offset: const Offset(0, 4),
                 ),
-              ),
-              child: Row(
-                children: [
-                  Icon(
-                    icon,
-                    size: 32,
-                    color: AppColors.secondary,
+              ],
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // HEADER ROW
+                GestureDetector(
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => screen),
+                    );
+                  },
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: color.withOpacity(0.12),
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                        child: Icon(icon, size: 28, color: color),
+                      ),
+                      const SizedBox(width: 14),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              title,
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 19,
+                                color: color,
+                              ),
+                            ),
+                            const Text(
+                              "Top 3 suggestions + Voice Chat",
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.black54,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Icon(Icons.arrow_forward_ios_rounded,
+                          size: 18, color: color),
+                    ],
                   ),
+                ),
 
-                  const SizedBox(width: 18),
+                const SizedBox(height: 14),
+                const Divider(height: 1, thickness: 1, color: Colors.black12),
+                const SizedBox(height: 12),
 
-                  Expanded(
-                    child: Text(
-                      title,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.w600,
-                        fontSize: 18,
+                const Text(
+                  "Most Popular Queries:",
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black87,
+                  ),
+                ),
+                const SizedBox(height: 8),
+
+                // 3 PRESET CHIPS + OTHER
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    ...presets.asMap().entries.map((entry) {
+                      final index = entry.key + 1;
+                      final text = entry.value;
+                      return InkWell(
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (context) => screen),
+                          );
+                        },
+                        borderRadius: BorderRadius.circular(20),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 10, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: color.withOpacity(0.08),
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(color: color.withOpacity(0.25)),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              CircleAvatar(
+                                radius: 9,
+                                backgroundColor: color,
+                                child: Text(
+                                  "$index",
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 6),
+                              Text(
+                                text,
+                                style: const TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.black87,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    }),
+
+                    // OTHER CHIP
+                    InkWell(
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (context) => screen),
+                        );
+                      },
+                      borderRadius: BorderRadius.circular(20),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 10, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: Colors.grey.shade200,
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: const Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.more_horiz,
+                                size: 14, color: Colors.black54),
+                            SizedBox(width: 4),
+                            Text(
+                              "Other...",
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.black87,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
-                  ),
-
-                  const Icon(
-                    Icons.arrow_forward_ios_rounded,
-                  ),
-                ],
-              ),
+                  ],
+                ),
+              ],
             ),
           ),
         ),
