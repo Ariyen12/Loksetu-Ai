@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'loksetu_logo_data.dart';
 
 class LokSetuLogoWidget extends StatelessWidget {
   final double width;
@@ -14,48 +15,24 @@ class LokSetuLogoWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Image.asset(
-      'assets/images/loksetu_logo.png',
+    return Image.memory(
+      kLokSetuLogoBytes,
       width: width,
       height: height,
       fit: fit,
       errorBuilder: (context, error, stackTrace) {
-        return Image.asset(
-          'Assets/images/loksetu_logo.png',
+        return Container(
           width: width,
           height: height,
-          fit: fit,
-          errorBuilder: (context, error2, stackTrace2) {
-            return Image.network(
-              'loksetu_logo.png',
-              width: width,
-              height: height,
-              fit: fit,
-              errorBuilder: (context, error3, stackTrace3) {
-                return Image.network(
-                  'favicon.png',
-                  width: width,
-                  height: height,
-                  fit: fit,
-                  errorBuilder: (context, error4, stackTrace4) {
-                    return Container(
-                      width: width,
-                      height: height,
-                      decoration: const BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: Colors.white,
-                      ),
-                      child: Icon(
-                        Icons.auto_awesome,
-                        size: width * 0.5,
-                        color: const Color(0xFF2563EB),
-                      ),
-                    );
-                  },
-                );
-              },
-            );
-          },
+          decoration: const BoxDecoration(
+            shape: BoxShape.circle,
+            color: Colors.white,
+          ),
+          child: Icon(
+            Icons.auto_awesome,
+            size: width * 0.5,
+            color: const Color(0xFF2563EB),
+          ),
         );
       },
     );

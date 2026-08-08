@@ -4,6 +4,7 @@ import 'package:speech_to_text/speech_to_text.dart' as stt;
 import '../services/gemini_voice_engine.dart';
 import '../services/language_detector.dart';
 import '../services/ai_service.dart';
+import '../widgets/loksetu_logo_widget.dart';
 
 class CategorySuggestion {
   final String id;
@@ -53,15 +54,9 @@ class _CategoryAssistantScreenState extends State<CategoryAssistantScreen>
   bool _speechAvailable = false;
   String? _currentlySpeakingId;
 
-  String _selectedLanguage = "English";
+  String _selectedLanguage = "Assamese (অসমীয়া)";
 
-  final Map<String, String> _languages = {
-    "English": "en-IN",
-    "Hindi": "hi-IN",
-    "Bengali": "bn-IN",
-    "Assamese": "as-IN",
-    "Manipuri": "mni-IN",
-  };
+  final Map<String, String> _languages = LanguageDetector.supportedLanguages;
 
   final List<Map<String, dynamic>> _messages = [];
 
@@ -86,7 +81,7 @@ class _CategoryAssistantScreenState extends State<CategoryAssistantScreen>
       "id": "init_msg",
       "sender": "ai",
       "text":
-          "Welcome to ${widget.categoryTitle} Open AI Assistant! 🌐\n\nAsk ANY question (Farming, Healthcare, Governance, Education, Tech, General Knowledge). I will answer accurately and provide Gemini & ChatGPT research links.",
+          "Welcome to ${widget.categoryTitle} Open AI Assistant! 🌐\n\nPick your language below or tap the mic. I give short, accurate answers with research links.",
       "links": <String>[],
     });
   }
@@ -134,7 +129,7 @@ class _CategoryAssistantScreenState extends State<CategoryAssistantScreen>
       return;
     }
 
-    final localeId = _languages[_selectedLanguage] ?? "en-IN";
+    final localeId = _languages[_selectedLanguage] ?? "as-IN";
 
     setState(() {
       _isListening = true;
@@ -159,7 +154,6 @@ class _CategoryAssistantScreenState extends State<CategoryAssistantScreen>
             setState(() {
               _selectedLanguage = detected.languageName;
             });
-            _showMessage("Auto-Detected Language: ${detected.languageName}");
           }
         }
 
@@ -185,7 +179,7 @@ class _CategoryAssistantScreenState extends State<CategoryAssistantScreen>
         "sender": "ai",
         "text": suggestion.answer,
         "links": [
-          "https://gemini.google.com/search?q=${Uri.encodeComponent(suggestion.title)} (Gemini Research)",
+          "https://gemini.google.com/search?q=${Uri.encodeComponent(suggestion.title)} (Gemini AI)",
           "https://services.india.gov.in (Official Govt Portal)",
         ],
       });
@@ -199,13 +193,6 @@ class _CategoryAssistantScreenState extends State<CategoryAssistantScreen>
     final message = _controller.text.trim();
     if (message.isEmpty) return;
 
-    final detected = LanguageDetector.detect(message);
-    if (detected.languageName != _selectedLanguage) {
-      setState(() {
-        _selectedLanguage = detected.languageName;
-      });
-    }
-
     final userMsgId = DateTime.now().millisecondsSinceEpoch.toString();
     setState(() {
       _messages.add({
@@ -218,7 +205,7 @@ class _CategoryAssistantScreenState extends State<CategoryAssistantScreen>
     });
 
     _scrollToBottom();
-    await Future.delayed(const Duration(milliseconds: 300));
+    await Future.delayed(const Duration(milliseconds: 250));
     if (!mounted) return;
 
     final aiResult = await LokSetuAIService.getAnswer(
@@ -250,7 +237,7 @@ class _CategoryAssistantScreenState extends State<CategoryAssistantScreen>
       return;
     }
 
-    final localeId = _languages[_selectedLanguage] ?? "en-IN";
+    final localeId = _languages[_selectedLanguage] ?? "as-IN";
 
     await _speechEngine.speak(
       text: text,
@@ -312,143 +299,127 @@ class _CategoryAssistantScreenState extends State<CategoryAssistantScreen>
             Text(widget.categoryTitle),
           ],
         ),
-        actions: [
-          PopupMenuButton<String>(
-            icon: const Icon(Icons.translate, color: Colors.white),
-            tooltip: "Language: $_selectedLanguage (Auto-Detect)",
-            initialValue: _selectedLanguage,
-            onSelected: (lang) {
-              setState(() {
-                _selectedLanguage = lang;
-              });
-              _showMessage("Language set to $lang");
-            },
-            itemBuilder: (context) {
-              return _languages.keys.map((lang) {
-                return PopupMenuItem<String>(
-                  value: lang,
-                  child: Row(
-                    children: [
-                      Icon(
-                        Icons.check,
-                        color: _selectedLanguage == lang
-                            ? widget.categoryColor
-                            : Colors.transparent,
-                        size: 18,
-                      ),
-                      const SizedBox(width: 8),
-                      Text(lang),
-                    ],
-                  ),
-                );
-              }).toList();
-            },
-          ),
-        ],
       ),
       body: Column(
         children: [
-          // PRESET SUGGESTIONS BAR
+          // 1-TAP LANGUAGE SELECTION BAR
           Container(
-            color: widget.categoryColor.withOpacity(0.06),
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            color: widget.categoryColor.withOpacity(0.08),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(
                   children: [
-                    Icon(Icons.stars_rounded,
-                        color: widget.categoryColor, size: 20),
+                    Icon(Icons.translate, size: 16, color: widget.categoryColor),
                     const SizedBox(width: 6),
                     Text(
-                      "Top 3 Most Requested Queries:",
+                      "Select Speaking Language:",
                       style: TextStyle(
+                        fontSize: 12,
                         fontWeight: FontWeight.bold,
                         color: widget.categoryColor,
-                        fontSize: 14,
                       ),
                     ),
                     const Spacer(),
-                    Chip(
-                      avatar: const Icon(Icons.travel_explore,
-                          size: 12, color: Colors.white),
-                      label: const Text(
-                        "Gemini & Research Active",
-                        style: TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white),
+                    Text(
+                      _selectedLanguage,
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold,
+                        color: widget.categoryColor,
                       ),
-                      backgroundColor: widget.categoryColor,
-                      padding: EdgeInsets.zero,
-                      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                     ),
                   ],
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 6),
                 SingleChildScrollView(
                   scrollDirection: Axis.horizontal,
                   child: Row(
-                    children: [
-                      ...widget.suggestions.asMap().entries.map((entry) {
-                        final index = entry.key + 1;
-                        final sug = entry.value;
-                        return Padding(
-                          padding: const EdgeInsets.only(right: 8.0),
-                          child: ActionChip(
-                            avatar: CircleAvatar(
-                              backgroundColor: widget.categoryColor,
-                              child: Text(
-                                "$index",
-                                style: const TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.bold),
-                              ),
+                    children: _languages.keys.map((langKey) {
+                      final isSel = _selectedLanguage == langKey;
+                      return Padding(
+                        padding: const EdgeInsets.only(right: 6.0),
+                        child: ChoiceChip(
+                          label: Text(
+                            langKey,
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: isSel ? FontWeight.bold : FontWeight.normal,
+                              color: isSel ? Colors.white : Colors.black87,
                             ),
-                            label: Text(
-                              sug.title,
-                              style: const TextStyle(
-                                  fontSize: 13, fontWeight: FontWeight.w600),
-                            ),
-                            backgroundColor: Colors.white,
-                            elevation: 2,
-                            shadowColor: Colors.black12,
-                            onPressed: () => _selectSuggestion(sug),
                           ),
-                        );
-                      }),
-                      // OTHER OPTION
-                      ActionChip(
-                        avatar: const CircleAvatar(
-                          backgroundColor: Colors.grey,
-                          child: Icon(Icons.more_horiz,
-                              color: Colors.white, size: 16),
+                          selected: isSel,
+                          selectedColor: widget.categoryColor,
+                          onSelected: (selected) {
+                            if (selected) {
+                              setState(() {
+                                _selectedLanguage = langKey;
+                              });
+                              _showMessage("Language set to $langKey");
+                            }
+                          },
                         ),
-                        label: const Text(
-                          "Other (Ask ANY Question)...",
-                          style: TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.black87,
-                          ),
-                        ),
-                        backgroundColor: Colors.grey.shade200,
-                        elevation: 2,
-                        shadowColor: Colors.black12,
-                        onPressed: () {
-                          _showMessage(
-                              "Ask ANY question in your language below.");
-                        },
-                      ),
-                    ],
+                      );
+                    }).toList(),
                   ),
                 ),
               ],
             ),
           ),
 
-          // CHAT MESSAGES LIST WITH RESEARCH LINKS
+          // PRESET SUGGESTIONS BAR
+          Container(
+            color: Colors.white,
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: [
+                  ...widget.suggestions.asMap().entries.map((entry) {
+                    final index = entry.key + 1;
+                    final sug = entry.value;
+                    return Padding(
+                      padding: const EdgeInsets.only(right: 8.0),
+                      child: ActionChip(
+                        avatar: CircleAvatar(
+                          backgroundColor: widget.categoryColor,
+                          child: Text(
+                            "$index",
+                            style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 11,
+                                fontWeight: FontWeight.bold),
+                          ),
+                        ),
+                        label: Text(
+                          sug.title,
+                          style: const TextStyle(
+                              fontSize: 12, fontWeight: FontWeight.w600),
+                        ),
+                        backgroundColor: widget.categoryColor.withOpacity(0.06),
+                        onPressed: () => _selectSuggestion(sug),
+                      ),
+                    );
+                  }),
+                  ActionChip(
+                    avatar: const CircleAvatar(
+                      backgroundColor: Colors.grey,
+                      child: Icon(Icons.more_horiz,
+                          color: Colors.white, size: 14),
+                    ),
+                    label: const Text("Other (Ask ANY Question)..."),
+                    backgroundColor: Colors.grey.shade200,
+                    onPressed: () {
+                      _showMessage("Ask ANY question in $_selectedLanguage below.");
+                    },
+                  ),
+                ],
+              ),
+            ),
+          ),
+
+          // CHAT MESSAGES LIST WITH SHORT ACCURATE ANSWERS & RESEARCH LINKS
           Expanded(
             child: ListView.builder(
               controller: _scrollController,
@@ -475,19 +446,7 @@ class _CategoryAssistantScreenState extends State<CategoryAssistantScreen>
                       color: isUser
                           ? widget.categoryColor
                           : Colors.grey.shade100,
-                      borderRadius: BorderRadius.circular(18).copyWith(
-                        bottomRight:
-                            isUser ? const Radius.circular(2) : null,
-                        bottomLeft:
-                            !isUser ? const Radius.circular(2) : null,
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.04),
-                          blurRadius: 6,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
+                      borderRadius: BorderRadius.circular(18),
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -503,24 +462,8 @@ class _CategoryAssistantScreenState extends State<CategoryAssistantScreen>
 
                         // RESEARCH & SOURCE LINKS
                         if (!isUser && links.isNotEmpty) ...[
-                          const SizedBox(height: 12),
+                          const SizedBox(height: 10),
                           const Divider(height: 1, thickness: 1),
-                          const SizedBox(height: 8),
-                          const Row(
-                            children: [
-                              Icon(Icons.link_rounded,
-                                  size: 14, color: Colors.blue),
-                              SizedBox(width: 4),
-                              Text(
-                                "Verified Research & Source Links:",
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.blue,
-                                ),
-                              ),
-                            ],
-                          ),
                           const SizedBox(height: 6),
                           Wrap(
                             spacing: 6,
@@ -589,7 +532,7 @@ class _CategoryAssistantScreenState extends State<CategoryAssistantScreen>
             ),
           ),
 
-          // GEMINI-STYLE ANIMATED MIC BAR
+          // ANIMATED MIC BAR
           SafeArea(
             child: Container(
               padding: const EdgeInsets.all(12),
@@ -628,7 +571,7 @@ class _CategoryAssistantScreenState extends State<CategoryAssistantScreen>
                         backgroundColor:
                             _isListening ? Colors.red : widget.categoryColor,
                         onPressed: _startListening,
-                        tooltip: "Gemini Auto Voice Mic",
+                        tooltip: "Listen Mic",
                         child: Icon(
                           _isListening ? Icons.graphic_eq : Icons.mic,
                           color: Colors.white,
@@ -644,8 +587,8 @@ class _CategoryAssistantScreenState extends State<CategoryAssistantScreen>
                       onSubmitted: (_) => _sendMessage(),
                       decoration: InputDecoration(
                         hintText: _isListening
-                            ? "Listening (Ask ANYTHING)..."
-                            : "Ask ANY question or speak...",
+                            ? "Listening in $_selectedLanguage..."
+                            : "Ask ANY question in $_selectedLanguage...",
                         filled: true,
                         fillColor: Colors.grey.shade100,
                         border: OutlineInputBorder(

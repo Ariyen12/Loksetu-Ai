@@ -28,7 +28,7 @@ class _ChatScreenState extends State<ChatScreen>
   bool _speechAvailable = false;
   String? _currentlySpeakingId;
 
-  String _selectedLanguage = "English";
+  String _selectedLanguage = "Assamese (অসমীয়া)";
 
   final Map<String, String> _languages = LanguageDetector.supportedLanguages;
 
@@ -37,35 +37,8 @@ class _ChatScreenState extends State<ChatScreen>
       "id": "init_chat",
       "sender": "ai",
       "text":
-          "Namaste! 👋 I am LokSetu Multilingual AI Assistant.\n\nPress the mic button and speak in any language (Assamese, Manipuri, Bengali, Bodo, Nepali, Hindi, English). I will auto-detect your language and answer with high-accuracy detail.",
+          "Namaste! 👋 I am LokSetu Multilingual AI Assistant.\n\nPick your language below, or press the mic button to speak. I provide short, accurate answers with research links.",
       "links": <String>[],
-    },
-  ];
-
-  final List<Map<String, String>> _globalPresets = [
-    {
-      "category": "Agriculture",
-      "query": "Pest & Crop Disease Control / PM-Kisan",
-      "answer":
-          "PM-Kisan & Pest Advisory:\n1. For Yellow Rust / Pests: Spray Neem Oil (5ml/L) or Emamectin Benzoate (0.4g/L).\n2. For PM-Kisan: Check pmkisan.gov.in & ensure Aadhaar e-KYC is linked.\n3. Kisan Helpline: Dial toll-free 1800-180-1551 for free guidance."
-    },
-    {
-      "category": "Healthcare",
-      "query": "Ayushman Bharat Card & Teleconsultation",
-      "answer":
-          "Healthcare Support:\n1. Apply for Ayushman Bharat PM-JAY Card for ₹5 Lakh free health coverage per family.\n2. Free Doctor Consultations: Register at esanjeevaniopd.in.\n3. Ambulance: Call 108 for emergency hospital transport."
-    },
-    {
-      "category": "Governance",
-      "query": "Income / Caste Certificate & e-District",
-      "answer":
-          "Government Services:\n1. Apply for Certificates online at state e-District portal or local CSC center.\n2. Link Aadhaar with Ration Card at your local Fair Price Shop dealer."
-    },
-    {
-      "category": "Education",
-      "query": "Post-Matric Scholarships & Skill Training",
-      "answer":
-          "Education & Skills:\n1. National Scholarship Portal: Apply at scholarships.gov.in.\n2. Free PMKVY Skill Courses: Enroll at local centers with job placement support."
     },
   ];
 
@@ -115,7 +88,7 @@ class _ChatScreenState extends State<ChatScreen>
 
   Future<void> _startListening() async {
     if (!_speechAvailable) {
-      _showMessage("Microphone unavailable or browser permission denied.");
+      _showMessage("Microphone unavailable. Check browser permissions.");
       return;
     }
 
@@ -127,7 +100,7 @@ class _ChatScreenState extends State<ChatScreen>
       return;
     }
 
-    final localeId = _languages[_selectedLanguage] ?? "en-IN";
+    final localeId = _languages[_selectedLanguage] ?? "as-IN";
 
     setState(() {
       _isListening = true;
@@ -152,7 +125,6 @@ class _ChatScreenState extends State<ChatScreen>
             setState(() {
               _selectedLanguage = detected.languageName;
             });
-            _showMessage("Auto-Detected Language: ${detected.languageName}");
           }
         }
 
@@ -163,40 +135,9 @@ class _ChatScreenState extends State<ChatScreen>
     );
   }
 
-  Future<void> _selectPreset(Map<String, String> preset) async {
-    final msgId = DateTime.now().millisecondsSinceEpoch.toString();
-    setState(() {
-      _messages.add({
-        "id": "${msgId}_u",
-        "sender": "user",
-        "text": preset["query"]!,
-        "links": <String>[],
-      });
-      _messages.add({
-        "id": "${msgId}_ai",
-        "sender": "ai",
-        "text": preset["answer"]!,
-        "links": [
-          "https://gemini.google.com/search?q=${Uri.encodeComponent(preset['query']!)} (Gemini Research)",
-          "https://services.india.gov.in (Official Govt Portal)"
-        ],
-      });
-    });
-
-    _scrollToBottom();
-    await _speak("${msgId}_ai", preset["answer"]!);
-  }
-
   Future<void> _sendMessage() async {
     final message = _controller.text.trim();
     if (message.isEmpty) return;
-
-    final detected = LanguageDetector.detect(message);
-    if (detected.languageName != _selectedLanguage) {
-      setState(() {
-        _selectedLanguage = detected.languageName;
-      });
-    }
 
     final userMsgId = DateTime.now().millisecondsSinceEpoch.toString();
     setState(() {
@@ -210,7 +151,7 @@ class _ChatScreenState extends State<ChatScreen>
     });
 
     _scrollToBottom();
-    await Future.delayed(const Duration(milliseconds: 300));
+    await Future.delayed(const Duration(milliseconds: 250));
     if (!mounted) return;
 
     final aiResult = await LokSetuAIService.getAnswer(
@@ -242,7 +183,7 @@ class _ChatScreenState extends State<ChatScreen>
       return;
     }
 
-    final localeId = _languages[_selectedLanguage] ?? "en-IN";
+    final localeId = _languages[_selectedLanguage] ?? "as-IN";
 
     await _speechEngine.speak(
       text: text,
@@ -308,72 +249,76 @@ class _ChatScreenState extends State<ChatScreen>
             const Text("LokSetu AI Voice Chatbot"),
           ],
         ),
-        actions: [
-          DropdownButton<String>(
-            value: _selectedLanguage,
-            underline: const SizedBox(),
-            icon: const Icon(Icons.translate, color: Colors.blue),
-            items: _languages.keys.map((language) {
-              return DropdownMenuItem(
-                value: language,
-                child: Text(language, style: const TextStyle(fontSize: 12)),
-              );
-            }).toList(),
-            onChanged: (value) {
-              if (value == null) return;
-              setState(() {
-                _selectedLanguage = value;
-              });
-            },
-          ),
-          const SizedBox(width: 12),
-        ],
       ),
       body: Column(
         children: [
-          // QUICK SUGGESTIONS STRIP
+          // 1-TAP LANGUAGE SELECTION BAR
           Container(
             color: Colors.blue.shade50,
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            child: SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: Row(
-                children: [
-                  ..._globalPresets.map((preset) {
-                    return Padding(
-                      padding: const EdgeInsets.only(right: 8.0),
-                      child: ActionChip(
-                        avatar: CircleAvatar(
-                          backgroundColor: Colors.blue,
-                          child: Text(preset["category"]![0],
-                              style: const TextStyle(
-                                  color: Colors.white, fontSize: 11)),
-                        ),
-                        label: Text(preset["query"]!,
-                            style: const TextStyle(fontSize: 12)),
-                        backgroundColor: Colors.white,
-                        onPressed: () => _selectPreset(preset),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    const Icon(Icons.translate, size: 16, color: Colors.blue),
+                    const SizedBox(width: 6),
+                    const Text(
+                      "Select Speaking Language:",
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.blue,
                       ),
-                    );
-                  }),
-                  ActionChip(
-                    avatar: const CircleAvatar(
-                      backgroundColor: Colors.grey,
-                      child: Icon(Icons.more_horiz,
-                          color: Colors.white, size: 14),
                     ),
-                    label: const Text("Other (Ask ANY Question)..."),
-                    backgroundColor: Colors.grey.shade200,
-                    onPressed: () {
-                      _showMessage("Ask ANY question in your language below.");
-                    },
+                    const Spacer(),
+                    Text(
+                      _selectedLanguage,
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.blue.shade800,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 6),
+                SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    children: _languages.keys.map((langKey) {
+                      final isSel = _selectedLanguage == langKey;
+                      return Padding(
+                        padding: const EdgeInsets.only(right: 6.0),
+                        child: ChoiceChip(
+                          label: Text(
+                            langKey,
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: isSel ? FontWeight.bold : FontWeight.normal,
+                              color: isSel ? Colors.white : Colors.black87,
+                            ),
+                          ),
+                          selected: isSel,
+                          selectedColor: Colors.blue.shade600,
+                          onSelected: (selected) {
+                            if (selected) {
+                              setState(() {
+                                _selectedLanguage = langKey;
+                              });
+                              _showMessage("Language set to $langKey");
+                            }
+                          },
+                        ),
+                      );
+                    }).toList(),
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
 
-          // CHAT MESSAGES WITH RESEARCH LINKS
+          // CHAT MESSAGES WITH SHORT ACCURATE ANSWERS & RESEARCH LINKS
           Expanded(
             child: ListView.builder(
               controller: _scrollController,
@@ -397,7 +342,7 @@ class _ChatScreenState extends State<ChatScreen>
                     margin: const EdgeInsets.only(bottom: 14),
                     padding: const EdgeInsets.all(14),
                     decoration: BoxDecoration(
-                      color: isUser ? Colors.blue.shade600 : Colors.grey.shade200,
+                      color: isUser ? Colors.blue.shade600 : Colors.grey.shade100,
                       borderRadius: BorderRadius.circular(18),
                     ),
                     child: Column(
@@ -414,24 +359,8 @@ class _ChatScreenState extends State<ChatScreen>
 
                         // VERIFIED RESEARCH LINKS
                         if (!isUser && links.isNotEmpty) ...[
-                          const SizedBox(height: 12),
+                          const SizedBox(height: 10),
                           const Divider(height: 1, thickness: 1),
-                          const SizedBox(height: 8),
-                          const Row(
-                            children: [
-                              Icon(Icons.link_rounded,
-                                  size: 14, color: Colors.blue),
-                              SizedBox(width: 4),
-                              Text(
-                                "Gemini & Verified Research Links:",
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.blue,
-                                ),
-                              ),
-                            ],
-                          ),
                           const SizedBox(height: 6),
                           Wrap(
                             spacing: 6,
@@ -498,7 +427,7 @@ class _ChatScreenState extends State<ChatScreen>
             ),
           ),
 
-          // GEMINI-STYLE ANIMATED MIC INPUT BAR
+          // ANIMATED MIC BAR
           SafeArea(
             child: Padding(
               padding: const EdgeInsets.all(12),
@@ -527,7 +456,7 @@ class _ChatScreenState extends State<ChatScreen>
                         backgroundColor:
                             _isListening ? Colors.red : Colors.blue,
                         onPressed: _startListening,
-                        tooltip: "Gemini Auto Voice Mic",
+                        tooltip: "Listen Mic",
                         child: Icon(_isListening ? Icons.graphic_eq : Icons.mic),
                       ),
                     ),
@@ -540,8 +469,8 @@ class _ChatScreenState extends State<ChatScreen>
                       onSubmitted: (_) => _sendMessage(),
                       decoration: InputDecoration(
                         hintText: _isListening
-                            ? "Listening (Speak in ANY language)..."
-                            : "Ask ANY question or speak...",
+                            ? "Listening in $_selectedLanguage..."
+                            : "Ask ANY question in $_selectedLanguage...",
                         filled: true,
                         fillColor: Colors.grey.shade100,
                         border: OutlineInputBorder(

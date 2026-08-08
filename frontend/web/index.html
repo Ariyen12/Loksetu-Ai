@@ -5,9 +5,9 @@
 
   <meta charset="UTF-8">
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
-  <meta name="description" content="LokSetu AI - Open-Domain Gemini & ChatGPT Multilingual AI">
+  <meta name="description" content="LokSetu AI - Multilingual Citizen & Farmer Platform">
 
-  <!-- Cache Control to prevent browser from caching old builds -->
+  <!-- Cache Control -->
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
@@ -34,7 +34,7 @@
       });
     }
 
-    // Gemini & ChatGPT Ultra-Realistic Sentence-Chunked Voice Engine
+    // LokSetu Sweet & Natural Human Voice Engine (No Robotic Reading / No "Dot" Reading)
     window.LokSetuVoiceEngine = {
       voices: [],
       isSpeaking: false,
@@ -51,63 +51,44 @@
         window.speechSynthesis.cancel();
         this.isSpeaking = true;
 
-        // Clean text: Strip emojis, markdown, raw numbers
-        let cleaned = text
-          .replace(/[\u{1F300}-\u{1F9FF}]|[\u{1F600}-\u{1F64F}]|[\u{1F680}-\u{1F6FF}]|[\u{2600}-\u{26FF}]|[\u{2700}-\u{27BF}]|[\u{1F900}-\u{1F9FF}]|[\u{1F1E6}-\u{1F1FF}]/gu, '')
-          .replace(/₹/g, ' rupees ')
-          .replace(/\n1\. /g, '. First, ')
-          .replace(/\n2\. /g, '. Second, ')
-          .replace(/\n3\. /g, '. Third, ')
-          .replace(/\n4\. /g, '. Fourth, ')
-          .replace(/• /g, '. ')
-          .replace(/\n/g, '. ')
-          .replace(/[\*\#\_\~`\[\]\(\)]/g, '')
-          .replace(/\s+/g, ' ')
-          .trim();
+        // 1. Remove Emojis
+        let cleaned = text.replace(/[\u{1F300}-\u{1F9FF}]|[\u{1F600}-\u{1F64F}]|[\u{1F680}-\u{1F6FF}]|[\u{2600}-\u{26FF}]|[\u{2700}-\u{27BF}]|[\u{1F900}-\u{1F9FF}]|[\u{1F1E6}-\u{1F1FF}]/gu, '');
+        
+        // 2. Replace bullet numbers & currency
+        cleaned = cleaned.replace(/₹/g, ' rupees ');
+        cleaned = cleaned.replace(/1\. /g, ' First ');
+        cleaned = cleaned.replace(/2\. /g, ' Second ');
+        cleaned = cleaned.replace(/3\. /g, ' Third ');
+        cleaned = cleaned.replace(/4\. /g, ' Fourth ');
+
+        // 3. REMOVE ALL PUNCTUATION MARKS SO TTS NEVER READS "DOT" OR "PERIOD"
+        cleaned = cleaned.replace(/[\.\,\:\;\-\*\#\_\~`\[\]\(\)\?\!\"\'\/\\]/g, ' ');
+        cleaned = cleaned.replace(/\s+/g, ' ').trim();
 
         if (!cleaned) return;
 
-        // Split text into natural conversational sentence chunks for human-like rhythm
-        let sentences = cleaned.split(/(?<=[.!?])\s+/).filter(s => s.trim().length > 0);
-        if (sentences.length === 0) sentences = [cleaned];
-
+        const utterance = new SpeechSynthesisUtterance(cleaned);
         let targetLang = langCode || 'hi-IN';
+
         if (!this.voices || this.voices.length === 0) {
           this.voices = window.speechSynthesis.getVoices();
         }
 
-        // Search for natural neural human voice (Google, Natural, Neural)
         let langPrefix = targetLang.split('-')[0];
-        let bestVoice = this.voices.find(v => v.lang.startsWith(langPrefix) && (v.name.includes('Google') || v.name.includes('Natural') || v.name.includes('Neural')));
+        // Select sweet female / natural voice
+        let bestVoice = this.voices.find(v => v.lang.startsWith(langPrefix) && (v.name.includes('Female') || v.name.includes('Google') || v.name.includes('Natural') || v.name.includes('Neural')));
         if (!bestVoice) {
           bestVoice = this.voices.find(v => v.lang.startsWith(langPrefix));
         }
 
-        let index = 0;
-        let speakNextChunk = () => {
-          if (!this.isSpeaking || index >= sentences.length) {
-            this.isSpeaking = false;
-            return;
-          }
-          let chunk = sentences[index++];
-          let utterance = new SpeechSynthesisUtterance(chunk);
-          if (bestVoice) utterance.voice = bestVoice;
-          utterance.rate = 0.92; // Human conversational tempo
-          utterance.pitch = 1.0;
-          utterance.onend = () => {
-            if (this.isSpeaking) {
-              setTimeout(speakNextChunk, 80);
-            }
-          };
-          utterance.onerror = () => {
-            if (this.isSpeaking) {
-              setTimeout(speakNextChunk, 80);
-            }
-          };
-          window.speechSynthesis.speak(utterance);
-        };
+        if (bestVoice) utterance.voice = bestVoice;
+        utterance.rate = 0.88; // Sweet, gentle human pace
+        utterance.pitch = 1.05; // Warm, sweet human pitch
 
-        speakNextChunk();
+        utterance.onend = () => { this.isSpeaking = false; };
+        utterance.onerror = () => { this.isSpeaking = false; };
+
+        window.speechSynthesis.speak(utterance);
       },
       stopSpeech: function() {
         this.isSpeaking = false;
