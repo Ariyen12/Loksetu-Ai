@@ -37,8 +37,7 @@ class _ChatScreenState extends State<ChatScreen>
     {
       "id": "init_chat",
       "sender": "ai",
-      "text":
-          "Namaste! 👋 I am LokSetu Voice AI.\n\nPick your language below or press the mic button to speak. I am ready to answer your questions simply and clearly.",
+      "text": "Welcome to LokSetu AI Assistant!\nAsk ANY question",
     },
   ];
 
