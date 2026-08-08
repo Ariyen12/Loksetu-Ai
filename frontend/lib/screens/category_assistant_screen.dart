@@ -44,7 +44,6 @@ class _CategoryAssistantScreenState extends State<CategoryAssistantScreen> {
 
   bool _isListening = false;
   bool _speechAvailable = false;
-  bool _showCustomChat = false;
   String? _currentlySpeakingId;
 
   String _selectedLanguage = "English";
@@ -100,8 +99,8 @@ class _CategoryAssistantScreenState extends State<CategoryAssistantScreen> {
     }
 
     await _tts.setLanguage(_languages[_selectedLanguage] ?? "en-IN");
-    await _tts.setSpeechRate(0.48);
-    await _tts.setPitch(1.0);
+    await _tts.setSpeechRate(0.46); // Natural human reading pace
+    await _tts.setPitch(1.0); // Natural voice pitch
 
     _tts.setCompletionHandler(() {
       if (mounted) {
@@ -114,6 +113,42 @@ class _CategoryAssistantScreenState extends State<CategoryAssistantScreen> {
     if (mounted) {
       setState(() {});
     }
+  }
+
+  /// Cleans display text so TTS speaks naturally like a human without reading emojis or bullet numbers
+  String _cleanTextForSpeech(String rawText) {
+    // 1. Remove all Emoji characters & symbols
+    String cleaned = rawText.replaceAll(
+      RegExp(
+        r'[\u{1F300}-\u{1F9FF}]|[\u{1F600}-\u{1F64F}]|[\u{1F680}-\u{1F6FF}]|[\u{2600}-\u{26FF}]|[\u{2700}-\u{27BF}]|[\u{1F900}-\u{1F9FF}]|[\u{1F1E6}-\u{1F1FF}]|[\u{200D}]',
+        unicode: true,
+      ),
+      '',
+    );
+
+    // 2. Convert Indian Rupee symbol ₹ to spoken "rupees"
+    cleaned = cleaned.replaceAll('₹', ' rupees ');
+
+    // 3. Convert numbers and bullet lists into natural conversational pauses
+    cleaned = cleaned.replaceAll('\n1. ', '. First, ');
+    cleaned = cleaned.replaceAll('\n2. ', '. Second, ');
+    cleaned = cleaned.replaceAll('\n3. ', '. Third, ');
+    cleaned = cleaned.replaceAll('\n4. ', '. Fourth, ');
+    cleaned = cleaned.replaceAll('\n5. ', '. Fifth, ');
+    cleaned = cleaned.replaceAll('1. ', 'First, ');
+    cleaned = cleaned.replaceAll('2. ', 'Second, ');
+    cleaned = cleaned.replaceAll('3. ', 'Third, ');
+    cleaned = cleaned.replaceAll('• ', '. ');
+    cleaned = cleaned.replaceAll('\n', '. ');
+
+    // 4. Strip markdown formatting symbols like *, #, _, ~, `, etc.
+    cleaned = cleaned.replaceAll(RegExp(r'[\*\#\_\~`\[\]\(\)]'), '');
+
+    // 5. Clean multiple periods and spaces
+    cleaned = cleaned.replaceAll(RegExp(r'\.+'), '. ');
+    cleaned = cleaned.replaceAll(RegExp(r'\s+'), ' ').trim();
+
+    return cleaned;
   }
 
   Future<void> _startListening() async {
@@ -136,7 +171,6 @@ class _CategoryAssistantScreenState extends State<CategoryAssistantScreen> {
 
     setState(() {
       _isListening = true;
-      _showCustomChat = true;
     });
 
     await _speech.listen(
@@ -172,7 +206,6 @@ class _CategoryAssistantScreenState extends State<CategoryAssistantScreen> {
         "sender": "ai",
         "text": suggestion.answer,
       });
-      _showCustomChat = true;
     });
 
     _scrollToBottom();
@@ -216,7 +249,6 @@ class _CategoryAssistantScreenState extends State<CategoryAssistantScreen> {
   String _generateSmartResponse(String query) {
     final text = query.toLowerCase();
 
-    // Check if query matches any category suggestion
     for (final sug in widget.suggestions) {
       if (text.contains(sug.title.toLowerCase()) ||
           sug.title.toLowerCase().split(' ').any(
@@ -227,13 +259,13 @@ class _CategoryAssistantScreenState extends State<CategoryAssistantScreen> {
     }
 
     if (widget.categoryTitle == "Healthcare") {
-      return "For your healthcare concern regarding '$query':\n\n1. Visit your nearest Primary Health Centre (PHC) or Community Health Centre.\n2. Emergency Helpline: Call 108 for instant ambulance service.\n3. Tele-consultation: Access free doctor tele-consultations on eSanjeevani portal (esanjeevaniopd.in).";
+      return "For your healthcare concern regarding '$query':\n\n1. Visit your nearest Primary Health Centre or Community Health Centre.\n2. Emergency Helpline: Call 108 for instant ambulance service.\n3. Teleconsultation: Access free doctor teleconsultations on eSanjeevani portal at esanjeevaniopd.in.";
     } else if (widget.categoryTitle == "Governance") {
-      return "Regarding government service '$query':\n\n1. Applications can be submitted online at your state e-District portal or local CSC Center.\n2. Documents needed: Aadhaar Card, Address Proof, and Income Certificate.\n3. National Helpline: Call 1915 for consumer or public grievance assistance.";
+      return "Regarding government service '$query':\n\n1. Applications can be submitted online at your state e-District portal or local CSC Center.\n2. Required documents: Aadhaar Card, Address Proof, and Income Certificate.\n3. National Helpline: Call 1915 for consumer or public grievance assistance.";
     } else if (widget.categoryTitle == "Education") {
       return "For your education query '$query':\n\n1. National Scholarship Portal: Apply at scholarships.gov.in for government stipends.\n2. Skill Development: Join free PMKVY courses with job placement support.\n3. Student Helpline: Reach out to your district education officer or school counselor.";
     } else {
-      return "For your agriculture query '$query':\n\n1. PM-Kisan Support: Check installment status at pmkisan.gov.in.\n2. Crop Insurance: Report weather/pest damage within 72 hrs on PMFBY app.\n3. Kisan Call Center: Dial 1800-180-1551 (Toll-Free) for free expert farming advice.";
+      return "For your agriculture query '$query':\n\n1. PM-Kisan Support: Check installment status at pmkisan.gov.in.\n2. Crop Insurance: Report weather or pest damage within 72 hours on PMFBY app.\n3. Kisan Call Center: Dial 1800-180-1551 toll-free for expert farming guidance.";
     }
   }
 
@@ -247,12 +279,17 @@ class _CategoryAssistantScreenState extends State<CategoryAssistantScreen> {
     }
 
     await _tts.stop();
+    final speechText = _cleanTextForSpeech(text);
+
     await _tts.setLanguage(_languages[_selectedLanguage] ?? "en-IN");
+    await _tts.setSpeechRate(0.46);
+    await _tts.setPitch(1.0);
+
     setState(() {
       _currentlySpeakingId = id;
     });
 
-    await _tts.speak(text);
+    await _tts.speak(speechText);
   }
 
   void _scrollToBottom() {
@@ -408,9 +445,6 @@ class _CategoryAssistantScreenState extends State<CategoryAssistantScreen> {
                         elevation: 2,
                         shadowColor: Colors.black12,
                         onPressed: () {
-                          setState(() {
-                            _showCustomChat = true;
-                          });
                           _showMessage(
                               "Type your query below or press the Mic icon to speak.");
                         },

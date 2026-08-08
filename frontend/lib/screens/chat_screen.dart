@@ -97,7 +97,8 @@ class _ChatScreenState extends State<ChatScreen> {
     }
 
     await _tts.setLanguage(_languages[_selectedLanguage] ?? "en-IN");
-    await _tts.setSpeechRate(0.48);
+    await _tts.setSpeechRate(0.46);
+    await _tts.setPitch(1.0);
 
     _tts.setCompletionHandler(() {
       if (mounted) {
@@ -110,6 +111,42 @@ class _ChatScreenState extends State<ChatScreen> {
     if (mounted) {
       setState(() {});
     }
+  }
+
+  /// Cleans display text so TTS speaks naturally like a human without reading emojis or bullet numbers
+  String _cleanTextForSpeech(String rawText) {
+    // 1. Remove all Emoji characters & symbols
+    String cleaned = rawText.replaceAll(
+      RegExp(
+        r'[\u{1F300}-\u{1F9FF}]|[\u{1F600}-\u{1F64F}]|[\u{1F680}-\u{1F6FF}]|[\u{2600}-\u{26FF}]|[\u{2700}-\u{27BF}]|[\u{1F900}-\u{1F9FF}]|[\u{1F1E6}-\u{1F1FF}]|[\u{200D}]',
+        unicode: true,
+      ),
+      '',
+    );
+
+    // 2. Convert Indian Rupee symbol ₹ to spoken "rupees"
+    cleaned = cleaned.replaceAll('₹', ' rupees ');
+
+    // 3. Convert numbers and bullet lists into natural conversational pauses
+    cleaned = cleaned.replaceAll('\n1. ', '. First, ');
+    cleaned = cleaned.replaceAll('\n2. ', '. Second, ');
+    cleaned = cleaned.replaceAll('\n3. ', '. Third, ');
+    cleaned = cleaned.replaceAll('\n4. ', '. Fourth, ');
+    cleaned = cleaned.replaceAll('\n5. ', '. Fifth, ');
+    cleaned = cleaned.replaceAll('1. ', 'First, ');
+    cleaned = cleaned.replaceAll('2. ', 'Second, ');
+    cleaned = cleaned.replaceAll('3. ', 'Third, ');
+    cleaned = cleaned.replaceAll('• ', '. ');
+    cleaned = cleaned.replaceAll('\n', '. ');
+
+    // 4. Strip markdown formatting symbols like *, #, _, ~, `, etc.
+    cleaned = cleaned.replaceAll(RegExp(r'[\*\#\_\~`\[\]\(\)]'), '');
+
+    // 5. Clean multiple periods and spaces
+    cleaned = cleaned.replaceAll(RegExp(r'\.+'), '. ');
+    cleaned = cleaned.replaceAll(RegExp(r'\s+'), ' ').trim();
+
+    return cleaned;
   }
 
   Future<void> _startListening() async {
@@ -216,7 +253,7 @@ class _ChatScreenState extends State<ChatScreen> {
         text.contains("doctor") ||
         text.contains("health") ||
         text.contains("ayushman")) {
-      return "Healthcare Assistance 🏥\n\n1. Apply for Ayushman Bharat PM-JAY Card for ₹5 Lakh health coverage.\n2. Get free doctor consultation on eSanjeevani portal (esanjeevaniopd.in).";
+      return "Healthcare Assistance 🏥\n\n1. Apply for Ayushman Bharat PM-JAY Card for ₹5 Lakh health coverage.\n2. Get free doctor consultation on eSanjeevani portal at esanjeevaniopd.in.";
     }
 
     if (text.contains("farmer") ||
@@ -230,10 +267,10 @@ class _ChatScreenState extends State<ChatScreen> {
         text.contains("scheme") ||
         text.contains("ration") ||
         text.contains("certificate")) {
-      return "Governance & Schemes 🏛️\n\n1. Apply for Certificates (Income/Caste) at your state e-District portal.\n2. Complete Ration Card e-KYC at your nearest FPS dealer.";
+      return "Governance & Schemes 🏛️\n\n1. Apply for Certificates at your state e-District portal.\n2. Complete Ration Card e-KYC at your nearest FPS dealer.";
     }
 
-    return "I am LokSetu AI. I can assist you with:\n• Healthcare 🏥\n• Governance 🏛️\n• Education 🎓\n• Agriculture 🌾";
+    return "I am LokSetu AI. I can assist you with Healthcare, Governance, Education, and Agriculture.";
   }
 
   Future<void> _speak(String id, String text) async {
@@ -246,12 +283,17 @@ class _ChatScreenState extends State<ChatScreen> {
     }
 
     await _tts.stop();
+    final speechText = _cleanTextForSpeech(text);
+
     await _tts.setLanguage(_languages[_selectedLanguage] ?? "en-IN");
+    await _tts.setSpeechRate(0.46);
+    await _tts.setPitch(1.0);
+
     setState(() {
       _currentlySpeakingId = id;
     });
 
-    await _tts.speak(text);
+    await _tts.speak(speechText);
   }
 
   void _scrollToBottom() {
