@@ -1,10 +1,8 @@
-import 'dart:js' as js;
 import 'package:flutter/material.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
 import '../services/gemini_voice_engine.dart';
 import '../services/language_detector.dart';
 import '../services/ai_service.dart';
-import '../widgets/loksetu_logo_widget.dart';
 
 class CategorySuggestion {
   final String id;
@@ -81,8 +79,7 @@ class _CategoryAssistantScreenState extends State<CategoryAssistantScreen>
       "id": "init_msg",
       "sender": "ai",
       "text":
-          "Welcome to ${widget.categoryTitle} Open AI Assistant! 🌐\n\nPick your language below or tap the mic. I give short, accurate answers with research links.",
-      "links": <String>[],
+          "Welcome to ${widget.categoryTitle} Voice Assistant! 🌐\n\nPick your language below or tap the mic to ask any question.",
     });
   }
 
@@ -171,17 +168,12 @@ class _CategoryAssistantScreenState extends State<CategoryAssistantScreen>
         "id": "${msgId}_u",
         "sender": "user",
         "text": suggestion.title,
-        "links": <String>[],
       });
 
       _messages.add({
         "id": "${msgId}_ai",
         "sender": "ai",
         "text": suggestion.answer,
-        "links": [
-          "https://gemini.google.com/search?q=${Uri.encodeComponent(suggestion.title)} (Gemini AI)",
-          "https://services.india.gov.in (Official Govt Portal)",
-        ],
       });
     });
 
@@ -199,7 +191,6 @@ class _CategoryAssistantScreenState extends State<CategoryAssistantScreen>
         "id": "${userMsgId}_u",
         "sender": "user",
         "text": message,
-        "links": <String>[],
       });
       _controller.clear();
     });
@@ -220,7 +211,6 @@ class _CategoryAssistantScreenState extends State<CategoryAssistantScreen>
         "id": "${aiMsgId}_ai",
         "sender": "ai",
         "text": aiResult.text,
-        "links": aiResult.researchLinks,
       });
     });
 
@@ -257,15 +247,6 @@ class _CategoryAssistantScreenState extends State<CategoryAssistantScreen>
         }
       },
     );
-  }
-
-  void _launchUrl(String rawUrl) {
-    final linkOnly = rawUrl.split(' ').first;
-    try {
-      js.context.callMethod('open', [linkOnly, '_blank']);
-    } catch (_) {
-      _showMessage("Opening: $linkOnly");
-    }
   }
 
   void _scrollToBottom() {
@@ -408,7 +389,7 @@ class _CategoryAssistantScreenState extends State<CategoryAssistantScreen>
                       child: Icon(Icons.more_horiz,
                           color: Colors.white, size: 14),
                     ),
-                    label: const Text("Other (Ask ANY Question)..."),
+                    label: const Text("Other..."),
                     backgroundColor: Colors.grey.shade200,
                     onPressed: () {
                       _showMessage("Ask ANY question in $_selectedLanguage below.");
@@ -419,7 +400,7 @@ class _CategoryAssistantScreenState extends State<CategoryAssistantScreen>
             ),
           ),
 
-          // CHAT MESSAGES LIST WITH SHORT ACCURATE ANSWERS & RESEARCH LINKS
+          // CHAT MESSAGES LIST
           Expanded(
             child: ListView.builder(
               controller: _scrollController,
@@ -430,8 +411,6 @@ class _CategoryAssistantScreenState extends State<CategoryAssistantScreen>
                 final isUser = message["sender"] == "user";
                 final msgId = message["id"] ?? index.toString();
                 final isSpeaking = _currentlySpeakingId == msgId;
-                final List<String> links =
-                    (message["links"] as List<dynamic>?)?.cast<String>() ?? [];
 
                 return Align(
                   alignment:
@@ -459,32 +438,6 @@ class _CategoryAssistantScreenState extends State<CategoryAssistantScreen>
                             height: 1.35,
                           ),
                         ),
-
-                        // RESEARCH & SOURCE LINKS
-                        if (!isUser && links.isNotEmpty) ...[
-                          const SizedBox(height: 10),
-                          const Divider(height: 1, thickness: 1),
-                          const SizedBox(height: 6),
-                          Wrap(
-                            spacing: 6,
-                            runSpacing: 6,
-                            children: links.map((link) {
-                              return ActionChip(
-                                avatar: const Icon(Icons.open_in_new,
-                                    size: 12, color: Colors.blue),
-                                label: Text(
-                                  link.replaceAll(RegExp(r'https?://'), ''),
-                                  style: const TextStyle(
-                                      fontSize: 11,
-                                      color: Colors.blue,
-                                      fontWeight: FontWeight.w600),
-                                ),
-                                backgroundColor: Colors.blue.shade50,
-                                onPressed: () => _launchUrl(link),
-                              );
-                            }).toList(),
-                          ),
-                        ],
 
                         // LISTEN BUTTON
                         if (!isUser) ...[

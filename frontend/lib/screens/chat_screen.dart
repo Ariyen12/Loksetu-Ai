@@ -1,4 +1,3 @@
-import 'dart:js' as js;
 import 'package:flutter/material.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
 import '../services/gemini_voice_engine.dart';
@@ -39,8 +38,7 @@ class _ChatScreenState extends State<ChatScreen>
       "id": "init_chat",
       "sender": "ai",
       "text":
-          "Namaste! 👋 I am LokSetu Multilingual AI Assistant.\n\nConnected with Google Gemini API & research search. Pick your language below or speak into the mic.",
-      "links": <String>[],
+          "Namaste! 👋 I am LokSetu Voice AI.\n\nPick your language below or press the mic button to speak. I am ready to answer your questions simply and clearly.",
     },
   ];
 
@@ -107,7 +105,7 @@ class _ChatScreenState extends State<ChatScreen>
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const Text(
-                "Enter your Google Gemini API Key for live real-time AI responses:",
+                "Enter your Google Gemini API Key for live AI responses:",
                 style: TextStyle(fontSize: 13),
               ),
               const SizedBox(height: 12),
@@ -117,14 +115,6 @@ class _ChatScreenState extends State<ChatScreen>
                   hintText: "AIzaSy...",
                   border: OutlineInputBorder(),
                   contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                ),
-              ),
-              const SizedBox(height: 10),
-              InkWell(
-                onTap: () => _launchUrl("https://aistudio.google.com/app/apikey"),
-                child: const Text(
-                  "Get free Gemini API Key at aistudio.google.com ↗",
-                  style: TextStyle(color: Colors.blue, fontSize: 12, fontWeight: FontWeight.bold),
                 ),
               ),
             ],
@@ -207,7 +197,6 @@ class _ChatScreenState extends State<ChatScreen>
         "id": "${userMsgId}_u",
         "sender": "user",
         "text": message,
-        "links": <String>[],
       });
       _controller.clear();
     });
@@ -229,8 +218,6 @@ class _ChatScreenState extends State<ChatScreen>
         "id": "${aiMsgId}_ai",
         "sender": "ai",
         "text": aiResult.text,
-        "links": aiResult.researchLinks,
-        "isGoogleAPI": aiResult.isLiveGoogleGemini,
       });
     });
 
@@ -267,15 +254,6 @@ class _ChatScreenState extends State<ChatScreen>
         }
       },
     );
-  }
-
-  void _launchUrl(String rawUrl) {
-    final linkOnly = rawUrl.split(' ').first;
-    try {
-      js.context.callMethod('open', [linkOnly, '_blank']);
-    } catch (_) {
-      _showMessage("Opening: $linkOnly");
-    }
   }
 
   void _scrollToBottom() {
@@ -389,7 +367,7 @@ class _ChatScreenState extends State<ChatScreen>
             ),
           ),
 
-          // CHAT MESSAGES
+          // CLEAN CHAT MESSAGES
           Expanded(
             child: ListView.builder(
               controller: _scrollController,
@@ -400,8 +378,6 @@ class _ChatScreenState extends State<ChatScreen>
                 final isUser = message["sender"] == "user";
                 final msgId = message["id"] ?? index.toString();
                 final isSpeaking = _currentlySpeakingId == msgId;
-                final List<String> links =
-                    (message["links"] as List<dynamic>?)?.cast<String>() ?? [];
 
                 return Align(
                   alignment:
@@ -427,32 +403,6 @@ class _ChatScreenState extends State<ChatScreen>
                             height: 1.35,
                           ),
                         ),
-
-                        // VERIFIED RESEARCH LINKS
-                        if (!isUser && links.isNotEmpty) ...[
-                          const SizedBox(height: 10),
-                          const Divider(height: 1, thickness: 1),
-                          const SizedBox(height: 6),
-                          Wrap(
-                            spacing: 6,
-                            runSpacing: 6,
-                            children: links.map((link) {
-                              return ActionChip(
-                                avatar: const Icon(Icons.open_in_new,
-                                    size: 12, color: Colors.blue),
-                                label: Text(
-                                  link.replaceAll(RegExp(r'https?://'), ''),
-                                  style: const TextStyle(
-                                      fontSize: 11,
-                                      color: Colors.blue,
-                                      fontWeight: FontWeight.w600),
-                                ),
-                                backgroundColor: Colors.blue.shade50,
-                                onPressed: () => _launchUrl(link),
-                              );
-                            }).toList(),
-                          ),
-                        ],
 
                         // LISTEN BUTTON
                         if (!isUser) ...[
