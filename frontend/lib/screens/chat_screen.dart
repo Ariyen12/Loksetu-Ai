@@ -4,6 +4,7 @@ import 'package:speech_to_text/speech_to_text.dart' as stt;
 import '../services/gemini_voice_engine.dart';
 import '../services/language_detector.dart';
 import '../services/ai_service.dart';
+import '../services/gemini_api_service.dart';
 import '../widgets/loksetu_logo_widget.dart';
 
 class ChatScreen extends StatefulWidget {
@@ -16,6 +17,7 @@ class ChatScreen extends StatefulWidget {
 class _ChatScreenState extends State<ChatScreen>
     with SingleTickerProviderStateMixin {
   final TextEditingController _controller = TextEditingController();
+  final TextEditingController _apiKeyController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
 
   final stt.SpeechToText _speech = stt.SpeechToText();
@@ -37,7 +39,7 @@ class _ChatScreenState extends State<ChatScreen>
       "id": "init_chat",
       "sender": "ai",
       "text":
-          "Namaste! 👋 I am LokSetu Multilingual AI Assistant.\n\nPick your language below, or press the mic button to speak. I provide short, accurate answers with research links.",
+          "Namaste! 👋 I am LokSetu Multilingual AI Assistant.\n\nConnected with Google Gemini API & research search. Pick your language below or speak into the mic.",
       "links": <String>[],
     },
   ];
@@ -45,6 +47,8 @@ class _ChatScreenState extends State<ChatScreen>
   @override
   void initState() {
     super.initState();
+    _apiKeyController.text = GeminiAPIService.userApiKey;
+
     _micPulseController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 1000),
@@ -84,6 +88,64 @@ class _ChatScreenState extends State<ChatScreen>
     if (mounted) {
       setState(() {});
     }
+  }
+
+  void _showGeminiApiKeyDialog() {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Row(
+            children: [
+              Icon(Icons.auto_awesome, color: Colors.blue),
+              SizedBox(width: 8),
+              Text("Google Gemini API"),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                "Enter your Google Gemini API Key for live real-time AI responses:",
+                style: TextStyle(fontSize: 13),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: _apiKeyController,
+                decoration: const InputDecoration(
+                  hintText: "AIzaSy...",
+                  border: OutlineInputBorder(),
+                  contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                ),
+              ),
+              const SizedBox(height: 10),
+              InkWell(
+                onTap: () => _launchUrl("https://aistudio.google.com/app/apikey"),
+                child: const Text(
+                  "Get free Gemini API Key at aistudio.google.com ↗",
+                  style: TextStyle(color: Colors.blue, fontSize: 12, fontWeight: FontWeight.bold),
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text("Cancel"),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                GeminiAPIService.userApiKey = _apiKeyController.text.trim();
+                Navigator.pop(context);
+                _showMessage("Google Gemini API Key Saved!");
+              },
+              child: const Text("Save Key"),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   Future<void> _startListening() async {
@@ -158,6 +220,7 @@ class _ChatScreenState extends State<ChatScreen>
       query: message,
       currentCategory: "General",
       activeLanguage: _selectedLanguage,
+      userApiKey: GeminiAPIService.userApiKey,
     );
 
     final aiMsgId = DateTime.now().millisecondsSinceEpoch.toString();
@@ -167,6 +230,7 @@ class _ChatScreenState extends State<ChatScreen>
         "sender": "ai",
         "text": aiResult.text,
         "links": aiResult.researchLinks,
+        "isGoogleAPI": aiResult.isLiveGoogleGemini,
       });
     });
 
@@ -249,6 +313,13 @@ class _ChatScreenState extends State<ChatScreen>
             const Text("LokSetu AI Voice Chatbot"),
           ],
         ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.key, color: Colors.blue),
+            tooltip: "Connect Google Gemini API Key",
+            onPressed: _showGeminiApiKeyDialog,
+          ),
+        ],
       ),
       body: Column(
         children: [
@@ -318,7 +389,7 @@ class _ChatScreenState extends State<ChatScreen>
             ),
           ),
 
-          // CHAT MESSAGES WITH SHORT ACCURATE ANSWERS & RESEARCH LINKS
+          // CHAT MESSAGES
           Expanded(
             child: ListView.builder(
               controller: _scrollController,
@@ -503,6 +574,7 @@ class _ChatScreenState extends State<ChatScreen>
   @override
   void dispose() {
     _controller.dispose();
+    _apiKeyController.dispose();
     _scrollController.dispose();
     _micPulseController.dispose();
     _speech.stop();

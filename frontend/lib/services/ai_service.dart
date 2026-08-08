@@ -1,25 +1,47 @@
-import 'dart:convert';
+import 'gemini_api_service.dart';
 
 class AIResponse {
   final String text;
   final List<String> researchLinks;
   final String detectedLanguage;
+  final bool isLiveGoogleGemini;
 
   AIResponse({
     required this.text,
     required this.researchLinks,
     required this.detectedLanguage,
+    this.isLiveGoogleGemini = false,
   });
 }
 
 class LokSetuAIService {
-  /// Provides SHORT, CRISP, ULTRA-ACCURATE answers for ANY basic or complex query
+  /// Queries Google Gemini API for live real-time answers, or provides short crisp answers
   static Future<AIResponse> getAnswer({
     required String query,
     required String currentCategory,
     required String activeLanguage,
+    String? userApiKey,
   }) async {
-    final lower = query.trim().toLowerCase();
+    final trimmed = query.trim();
+    final lower = trimmed.toLowerCase();
+
+    // 1. TRY LIVE GOOGLE GEMINI API FIRST
+    final liveGemini = await GeminiAPIService.queryGoogleGeminiAPI(
+      prompt: trimmed,
+      language: activeLanguage,
+      apiKey: userApiKey,
+    );
+
+    if (liveGemini != null) {
+      return AIResponse(
+        text: liveGemini.text,
+        researchLinks: liveGemini.links,
+        detectedLanguage: activeLanguage,
+        isLiveGoogleGemini: true,
+      );
+    }
+
+    // 2. SHORT, CRISP, ACCURATE KNOWLEDGE BASE FALLBACK
     return _generateShortAccurateAnswer(query, lower, currentCategory, activeLanguage);
   }
 
@@ -30,20 +52,18 @@ class LokSetuAIService {
     String lang,
   ) {
     List<String> links = [
-      "https://gemini.google.com/search?q=${Uri.encodeComponent(originalQuery)} (Gemini AI)",
+      "https://gemini.google.com/search?q=${Uri.encodeComponent(originalQuery)} (Google Gemini AI)",
       "https://chatgpt.com (ChatGPT)",
       "https://en.wikipedia.org/wiki/Special:Search?search=${Uri.encodeComponent(originalQuery)} (Wikipedia)"
     ];
 
     String answer = "";
 
-    // -------------------------------------------------------------
-    // BASIC QUESTIONS & GREETINGS
-    // -------------------------------------------------------------
+    // GREETINGS & BASIC QUESTIONS
     if (lower == "hi" || lower == "hello" || lower == "namaste" || lower.contains("who are you")) {
-      answer = "Namaste! 👋 I am LokSetu AI.\n\n"
+      answer = "Namaste! 👋 I am LokSetu AI Assistant.\n\n"
           "• I help citizens & farmers with Agriculture, Healthcare, Governance, and Education.\n"
-          "• Speak or type any question in your native language for short, accurate answers.";
+          "• Ask any question in your language for short, accurate answers.";
       return AIResponse(text: answer, researchLinks: links, detectedLanguage: lang);
     }
 
@@ -52,9 +72,7 @@ class LokSetuAIService {
       return AIResponse(text: answer, researchLinks: links, detectedLanguage: lang);
     }
 
-    // -------------------------------------------------------------
-    // 🌾 AGRICULTURE & PEST CONTROL (SHORT & ACCURATE)
-    // -------------------------------------------------------------
+    // 🌾 AGRICULTURE & PEST CONTROL
     if (lower.contains("farm") ||
         lower.contains("crop") ||
         lower.contains("pest") ||
@@ -78,12 +96,10 @@ class LokSetuAIService {
       links = [
         "https://pmkisan.gov.in (PM-Kisan Portal)",
         "https://pmfby.gov.in (PM Fasal Bima Insurance)",
-        "https://gemini.google.com/search?q=${Uri.encodeComponent(originalQuery)} (Gemini Agriculture)"
+        "https://gemini.google.com/search?q=${Uri.encodeComponent(originalQuery)} (Google Gemini AI)"
       ];
     }
-    // -------------------------------------------------------------
-    // 🏥 HEALTHCARE & MEDICAL (SHORT & ACCURATE)
-    // -------------------------------------------------------------
+    // 🏥 HEALTHCARE & MEDICAL
     else if (lower.contains("health") ||
         lower.contains("hospital") ||
         lower.contains("doctor") ||
@@ -99,12 +115,10 @@ class LokSetuAIService {
       links = [
         "https://pmjay.gov.in (Ayushman PM-JAY)",
         "https://esanjeevaniopd.in (Free eSanjeevani Teleconsultation)",
-        "https://gemini.google.com/search?q=${Uri.encodeComponent(originalQuery)} (Gemini Healthcare)"
+        "https://gemini.google.com/search?q=${Uri.encodeComponent(originalQuery)} (Google Gemini AI)"
       ];
     }
-    // -------------------------------------------------------------
-    // 🏛️ GOVERNANCE & CERTIFICATES (SHORT & ACCURATE)
-    // -------------------------------------------------------------
+    // 🏛️ GOVERNANCE & CERTIFICATES
     else if (lower.contains("gov") ||
         lower.contains("scheme") ||
         lower.contains("certificate") ||
@@ -121,12 +135,10 @@ class LokSetuAIService {
       links = [
         "https://services.india.gov.in (Government Services)",
         "https://uidai.gov.in (Aadhaar Official)",
-        "https://gemini.google.com/search?q=${Uri.encodeComponent(originalQuery)} (Gemini Governance)"
+        "https://gemini.google.com/search?q=${Uri.encodeComponent(originalQuery)} (Google Gemini AI)"
       ];
     }
-    // -------------------------------------------------------------
-    // 🎓 EDUCATION & SCHOLARSHIPS (SHORT & ACCURATE)
-    // -------------------------------------------------------------
+    // 🎓 EDUCATION & SCHOLARSHIPS
     else if (lower.contains("school") ||
         lower.contains("college") ||
         lower.contains("education") ||
@@ -141,19 +153,17 @@ class LokSetuAIService {
       links = [
         "https://scholarships.gov.in (National Scholarship Portal)",
         "https://pmkvyofficial.org (PMKVY Skill Portal)",
-        "https://gemini.google.com/search?q=${Uri.encodeComponent(originalQuery)} (Gemini Education)"
+        "https://gemini.google.com/search?q=${Uri.encodeComponent(originalQuery)} (Google Gemini AI)"
       ];
     }
-    // -------------------------------------------------------------
-    // 🌐 OPEN-DOMAIN BASIC & GENERAL KNOWLEDGE (SHORT & ACCURATE)
-    // -------------------------------------------------------------
+    // 🌐 OPEN-DOMAIN GENERAL KNOWLEDGE
     else {
       answer = "🌐 Answer for '$originalQuery':\n\n"
-          "• Factual Summary: Factual info on '$originalQuery' is available across verified global & regional portals.\n"
-          "• Quick Advice: Check verified research links below for detailed references on Gemini, ChatGPT, and Wikipedia.";
+          "• Factual Summary: Information on '$originalQuery' is processed across verified global portals.\n"
+          "• Quick Advice: Click the verified research links below to explore details on Google Gemini AI and Wikipedia.";
 
       links = [
-        "https://gemini.google.com/search?q=${Uri.encodeComponent(originalQuery)} (Gemini AI Research)",
+        "https://gemini.google.com/search?q=${Uri.encodeComponent(originalQuery)} (Google Gemini AI Research)",
         "https://chatgpt.com (ChatGPT Research Search)",
         "https://en.wikipedia.org/wiki/Special:Search?search=${Uri.encodeComponent(originalQuery)} (Wikipedia)"
       ];
