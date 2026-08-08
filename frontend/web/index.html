@@ -5,7 +5,7 @@
 
   <meta charset="UTF-8">
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
-  <meta name="description" content="LokSetu AI - Breaking Language Barriers">
+  <meta name="description" content="LokSetu AI - Multilingual Gemini-Style Voice Assistant">
 
   <!-- Cache Control to prevent browser from caching old builds -->
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
@@ -25,7 +25,7 @@
   <link rel="manifest" href="manifest.json">
 
   <script>
-    // Force unregister stale service worker to ensure latest Flutter web code loads
+    // Force unregister stale service worker to ensure latest code loads
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.getRegistrations().then(function(registrations) {
         for(let registration of registrations) {
@@ -33,6 +33,66 @@
         }
       });
     }
+
+    // Gemini-Style High Quality Voice Engine
+    window.LokSetuVoiceEngine = {
+      voices: [],
+      init: function() {
+        if ('speechSynthesis' in window) {
+          window.speechSynthesis.onvoiceschanged = () => {
+            this.voices = window.speechSynthesis.getVoices();
+          };
+          this.voices = window.speechSynthesis.getVoices();
+        }
+      },
+      speakText: function(text, langCode) {
+        if (!('speechSynthesis' in window)) return;
+        window.speechSynthesis.cancel();
+
+        // Strip emojis and clean text for human reading
+        let cleaned = text
+          .replace(/[\u{1F300}-\u{1F9FF}]|[\u{1F600}-\u{1F64F}]|[\u{1F680}-\u{1F6FF}]|[\u{2600}-\u{26FF}]|[\u{2700}-\u{27BF}]|[\u{1F900}-\u{1F9FF}]|[\u{1F1E6}-\u{1F1FF}]/gu, '')
+          .replace(/₹/g, ' rupees ')
+          .replace(/\n1\. /g, '. First, ')
+          .replace(/\n2\. /g, '. Second, ')
+          .replace(/\n3\. /g, '. Third, ')
+          .replace(/\n4\. /g, '. Fourth, ')
+          .replace(/• /g, '. ')
+          .replace(/\n/g, '. ')
+          .replace(/[\*\#\_\~`\[\]\(\)]/g, '')
+          .replace(/\s+/g, ' ')
+          .trim();
+
+        if (!cleaned) return;
+
+        const utterance = new SpeechSynthesisUtterance(cleaned);
+        let targetLang = langCode || 'hi-IN';
+
+        if (!this.voices || this.voices.length === 0) {
+          this.voices = window.speechSynthesis.getVoices();
+        }
+
+        // Search for highest quality Google / Natural / Neural voices
+        let bestVoice = this.voices.find(v => v.lang.startsWith(targetLang.split('-')[0]) && (v.name.includes('Google') || v.name.includes('Natural') || v.name.includes('Neural')));
+        if (!bestVoice) {
+          bestVoice = this.voices.find(v => v.lang.startsWith(targetLang.split('-')[0]));
+        }
+        if (bestVoice) {
+          utterance.voice = bestVoice;
+        }
+
+        utterance.rate = 0.95; // Fluent human pace like Gemini
+        utterance.pitch = 1.0; // Natural pitch
+
+        window.speechSynthesis.speak(utterance);
+      },
+      stopSpeech: function() {
+        if ('speechSynthesis' in window) {
+          window.speechSynthesis.cancel();
+        }
+      }
+    };
+    window.LokSetuVoiceEngine.init();
   </script>
 </head>
 <body>

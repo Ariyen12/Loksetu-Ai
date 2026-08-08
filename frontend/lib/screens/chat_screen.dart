@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
-import '../services/elevenlabs_service.dart';
+import '../services/gemini_voice_engine.dart';
 import '../services/language_detector.dart';
 import '../services/farmer_knowledge_base.dart';
 
@@ -11,12 +11,16 @@ class ChatScreen extends StatefulWidget {
   State<ChatScreen> createState() => _ChatScreenState();
 }
 
-class _ChatScreenState extends State<ChatScreen> {
+class _ChatScreenState extends State<ChatScreen>
+    with SingleTickerProviderStateMixin {
   final TextEditingController _controller = TextEditingController();
   final ScrollController _scrollController = ScrollController();
 
   final stt.SpeechToText _speech = stt.SpeechToText();
-  final ElevenLabsService _speechService = ElevenLabsService();
+  final GeminiVoiceEngine _speechEngine = GeminiVoiceEngine();
+
+  late AnimationController _micPulseController;
+  late Animation<double> _micPulseAnimation;
 
   bool _isListening = false;
   bool _speechAvailable = false;
@@ -37,7 +41,7 @@ class _ChatScreenState extends State<ChatScreen> {
       "id": "init_chat",
       "sender": "ai",
       "text":
-          "Namaste! 👋 I am LokSetu Multilingual AI.\n\nPress the mic button and speak in any language — I will auto-detect your language and answer your queries.",
+          "Namaste! 👋 I am LokSetu Multilingual AI.\n\nPress the mic button and speak in any language — I will auto-detect your language and answer with high quality human voice.",
     },
   ];
 
@@ -71,6 +75,15 @@ class _ChatScreenState extends State<ChatScreen> {
   @override
   void initState() {
     super.initState();
+    _micPulseController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1000),
+    )..repeat(reverse: true);
+
+    _micPulseAnimation = Tween<double>(begin: 1.0, end: 1.25).animate(
+      CurvedAnimation(parent: _micPulseController, curve: Curves.easeInOut),
+    );
+
     _initializeSpeech();
   }
 
@@ -143,7 +156,7 @@ class _ChatScreenState extends State<ChatScreen> {
             setState(() {
               _selectedLanguage = detected.languageName;
             });
-            _showMessage("Auto-Detected Language: ${detected.languageName}");
+            _showMessage("Gemini Auto-Detected: ${detected.languageName}");
           }
         }
 
@@ -177,7 +190,6 @@ class _ChatScreenState extends State<ChatScreen> {
     final message = _controller.text.trim();
     if (message.isEmpty) return;
 
-    // AUTO-DETECT LANGUAGE
     final detected = LanguageDetector.detect(message);
     if (detected.languageName != _selectedLanguage) {
       setState(() {
@@ -196,7 +208,7 @@ class _ChatScreenState extends State<ChatScreen> {
     });
 
     _scrollToBottom();
-    await Future.delayed(const Duration(milliseconds: 400));
+    await Future.delayed(const Duration(milliseconds: 350));
     if (!mounted) return;
 
     final response = _getDemoResponse(message);
@@ -253,7 +265,7 @@ class _ChatScreenState extends State<ChatScreen> {
 
   Future<void> _speak(String id, String text) async {
     if (_currentlySpeakingId == id) {
-      await _speechService.stop();
+      await _speechEngine.stop();
       setState(() {
         _currentlySpeakingId = null;
       });
@@ -262,7 +274,7 @@ class _ChatScreenState extends State<ChatScreen> {
 
     final localeId = _languages[_selectedLanguage] ?? "en-IN";
 
-    await _speechService.speak(
+    await _speechEngine.speak(
       text: text,
       localeId: localeId,
       onStart: () {
@@ -420,15 +432,30 @@ class _ChatScreenState extends State<ChatScreen> {
                           Row(
                             mainAxisAlignment: MainAxisAlignment.end,
                             children: [
-                              IconButton(
+                              ElevatedButton.icon(
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: isSpeaking
+                                      ? Colors.red
+                                      : Colors.blue.shade600,
+                                  foregroundColor: Colors.white,
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 12, vertical: 6),
+                                  minimumSize: Size.zero,
+                                  tapTargetSize:
+                                      MaterialTapTargetSize.shrinkWrap,
+                                ),
                                 icon: Icon(
                                   isSpeaking
                                       ? Icons.stop_circle
                                       : Icons.volume_up,
-                                  color: isSpeaking ? Colors.red : Colors.blue,
-                                  size: 20,
+                                  size: 16,
                                 ),
-                                tooltip: "Listen Natural Voice ($_selectedLanguage)",
+                                label: Text(
+                                  isSpeaking ? "Stop" : "Listen",
+                                  style: const TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.bold),
+                                ),
                                 onPressed: () =>
                                     _speak(msgId, message["text"] ?? ""),
                               ),
@@ -443,19 +470,39 @@ class _ChatScreenState extends State<ChatScreen> {
             ),
           ),
 
-          // INPUT BAR
+          // GEMINI-STYLE ANIMATED MIC INPUT BAR
           SafeArea(
             child: Padding(
               padding: const EdgeInsets.all(12),
               child: Row(
                 children: [
-                  FloatingActionButton(
-                    heroTag: "micButton",
-                    mini: true,
-                    backgroundColor: _isListening ? Colors.red : Colors.blue,
-                    onPressed: _startListening,
-                    tooltip: "Auto-Detect Language Mic",
-                    child: Icon(_isListening ? Icons.stop : Icons.mic),
+                  ScaleTransition(
+                    scale: _isListening
+                        ? _micPulseAnimation
+                        : const AlwaysStoppedAnimation(1.0),
+                    child: Container(
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        boxShadow: _isListening
+                            ? [
+                                BoxShadow(
+                                  color: Colors.blue.withOpacity(0.6),
+                                  blurRadius: 16,
+                                  spreadRadius: 4,
+                                ),
+                              ]
+                            : null,
+                      ),
+                      child: FloatingActionButton(
+                        heroTag: "micButton",
+                        mini: true,
+                        backgroundColor:
+                            _isListening ? Colors.red : Colors.blue,
+                        onPressed: _startListening,
+                        tooltip: "Gemini Auto Voice Mic",
+                        child: Icon(_isListening ? Icons.graphic_eq : Icons.mic),
+                      ),
+                    ),
                   ),
                   const SizedBox(width: 8),
                   Expanded(
@@ -465,7 +512,7 @@ class _ChatScreenState extends State<ChatScreen> {
                       onSubmitted: (_) => _sendMessage(),
                       decoration: InputDecoration(
                         hintText: _isListening
-                            ? "Listening (Auto-Detecting Language)..."
+                            ? "Listening (Gemini Auto-Detecting)..."
                             : "Speak in any language or type...",
                         filled: true,
                         fillColor: Colors.grey.shade100,
@@ -500,8 +547,9 @@ class _ChatScreenState extends State<ChatScreen> {
   void dispose() {
     _controller.dispose();
     _scrollController.dispose();
+    _micPulseController.dispose();
     _speech.stop();
-    _speechService.stop();
+    _speechEngine.stop();
     super.dispose();
   }
 }

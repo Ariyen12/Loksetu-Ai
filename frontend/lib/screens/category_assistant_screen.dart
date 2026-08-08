@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
-import '../services/elevenlabs_service.dart';
+import '../services/gemini_voice_engine.dart';
 import '../services/language_detector.dart';
 import '../services/farmer_knowledge_base.dart';
 
@@ -37,12 +37,16 @@ class CategoryAssistantScreen extends StatefulWidget {
       _CategoryAssistantScreenState();
 }
 
-class _CategoryAssistantScreenState extends State<CategoryAssistantScreen> {
+class _CategoryAssistantScreenState extends State<CategoryAssistantScreen>
+    with SingleTickerProviderStateMixin {
   final TextEditingController _controller = TextEditingController();
   final ScrollController _scrollController = ScrollController();
 
   final stt.SpeechToText _speech = stt.SpeechToText();
-  final ElevenLabsService _speechService = ElevenLabsService();
+  final GeminiVoiceEngine _speechEngine = GeminiVoiceEngine();
+
+  late AnimationController _micPulseController;
+  late Animation<double> _micPulseAnimation;
 
   bool _isListening = false;
   bool _speechAvailable = false;
@@ -63,6 +67,15 @@ class _CategoryAssistantScreenState extends State<CategoryAssistantScreen> {
   @override
   void initState() {
     super.initState();
+    _micPulseController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1000),
+    )..repeat(reverse: true);
+
+    _micPulseAnimation = Tween<double>(begin: 1.0, end: 1.25).animate(
+      CurvedAnimation(parent: _micPulseController, curve: Curves.easeInOut),
+    );
+
     _initializeSpeech();
     _addInitialGreeting();
   }
@@ -72,7 +85,7 @@ class _CategoryAssistantScreenState extends State<CategoryAssistantScreen> {
       "id": "init_msg",
       "sender": "ai",
       "text":
-          "Welcome to ${widget.categoryTitle} Assistant! 👋\nPick one of the 3 popular queries below, or press the mic button to speak in your language.",
+          "Welcome to ${widget.categoryTitle} Gemini Voice Assistant! 🎙️\n\nTap the microphone and speak naturally in your language — I will auto-detect your language and answer with high quality human voice.",
     });
   }
 
@@ -107,7 +120,7 @@ class _CategoryAssistantScreenState extends State<CategoryAssistantScreen> {
 
   Future<void> _startListening() async {
     if (!_speechAvailable) {
-      _showMessage("Microphone unavailable or browser permission denied.");
+      _showMessage("Microphone initialization failed. Check browser permissions.");
       return;
     }
 
@@ -138,14 +151,14 @@ class _CategoryAssistantScreenState extends State<CategoryAssistantScreen> {
           );
         });
 
-        // AUTO-DETECT USER SPOKEN LANGUAGE
+        // GEMINI AUTO-LANGUAGE DETECTION
         if (recognized.isNotEmpty) {
           final detected = LanguageDetector.detect(recognized);
           if (detected.languageName != _selectedLanguage) {
             setState(() {
               _selectedLanguage = detected.languageName;
             });
-            _showMessage("Auto-Detected Language: ${detected.languageName}");
+            _showMessage("Gemini Auto-Detected: ${detected.languageName}");
           }
         }
 
@@ -180,7 +193,6 @@ class _CategoryAssistantScreenState extends State<CategoryAssistantScreen> {
     final message = _controller.text.trim();
     if (message.isEmpty) return;
 
-    // AUTO-DETECT LANGUAGE FROM TYPED/SPOKEN QUERY
     final detected = LanguageDetector.detect(message);
     if (detected.languageName != _selectedLanguage) {
       setState(() {
@@ -199,7 +211,7 @@ class _CategoryAssistantScreenState extends State<CategoryAssistantScreen> {
     });
 
     _scrollToBottom();
-    await Future.delayed(const Duration(milliseconds: 400));
+    await Future.delayed(const Duration(milliseconds: 350));
     if (!mounted) return;
 
     final response = _generateSmartResponse(message);
@@ -218,7 +230,6 @@ class _CategoryAssistantScreenState extends State<CategoryAssistantScreen> {
   }
 
   String _generateSmartResponse(String query) {
-    // If category is Agriculture, use FarmerKnowledgeBase for deep accurate farming answers!
     if (widget.categoryTitle == "Agriculture") {
       return FarmerKnowledgeBase.getAccurateFarmerAnswer(
           query, widget.categoryTitle);
@@ -237,13 +248,13 @@ class _CategoryAssistantScreenState extends State<CategoryAssistantScreen> {
 
     if (widget.categoryTitle == "Healthcare") {
       return "Healthcare Solution for '$query':\n\n"
-          "1. For Emergency Medical Help: Dial 108 for free instant ambulance.\n"
-          "2. Free Doctor Consultation: Register on eSanjeevani portal at esanjeevaniopd.in.\n"
-          "3. Ayushman Bharat Card: Visit nearest CSC center with Aadhaar & Ration Card for ₹5 Lakh annual health coverage.";
+          "1. For Emergency Help: Dial 108 for free instant ambulance.\n"
+          "2. Free Doctor Consultations: Register at esanjeevaniopd.in.\n"
+          "3. Ayushman Bharat Card: Visit nearest CSC center with Aadhaar & Ration Card for ₹5 Lakh annual medical coverage.";
     } else if (widget.categoryTitle == "Governance") {
       return "Governance & Certificate Guidance for '$query':\n\n"
           "1. Official Certificates (Income/Caste/Residence): Apply online at your state e-District portal or local CSC center.\n"
-          "2. Ration Card e-KYC: Complete Aadhaar biometric linking at local Fair Price Shop (FPS) dealer.\n"
+          "2. Ration Card e-KYC: Complete Aadhaar biometric linking at local Fair Price Shop dealer.\n"
           "3. Public Grievances: Call national helpline 1915 or register on pgportal.gov.in.";
     } else if (widget.categoryTitle == "Education") {
       return "Education & Scholarship Guidance for '$query':\n\n"
@@ -258,7 +269,7 @@ class _CategoryAssistantScreenState extends State<CategoryAssistantScreen> {
 
   Future<void> _speak(String id, String text) async {
     if (_currentlySpeakingId == id) {
-      await _speechService.stop();
+      await _speechEngine.stop();
       setState(() {
         _currentlySpeakingId = null;
       });
@@ -267,7 +278,7 @@ class _CategoryAssistantScreenState extends State<CategoryAssistantScreen> {
 
     final localeId = _languages[_selectedLanguage] ?? "en-IN";
 
-    await _speechService.speak(
+    await _speechEngine.speak(
       text: text,
       localeId: localeId,
       onStart: () {
@@ -321,7 +332,7 @@ class _CategoryAssistantScreenState extends State<CategoryAssistantScreen> {
         actions: [
           PopupMenuButton<String>(
             icon: const Icon(Icons.translate, color: Colors.white),
-            tooltip: "Language: $_selectedLanguage (Auto-Detect Active)",
+            tooltip: "Language: $_selectedLanguage (Gemini Auto)",
             initialValue: _selectedLanguage,
             onSelected: (lang) {
               setState(() {
@@ -354,7 +365,7 @@ class _CategoryAssistantScreenState extends State<CategoryAssistantScreen> {
       ),
       body: Column(
         children: [
-          // PRESET SUGGESTIONS BAR (Top 3 preset queries + Other)
+          // PRESET SUGGESTIONS BAR
           Container(
             color: widget.categoryColor.withOpacity(0.06),
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -376,10 +387,10 @@ class _CategoryAssistantScreenState extends State<CategoryAssistantScreen> {
                     ),
                     const Spacer(),
                     Chip(
-                      avatar: const Icon(Icons.auto_awesome,
+                      avatar: const Icon(Icons.graphic_eq,
                           size: 12, color: Colors.white),
                       label: Text(
-                        "$_selectedLanguage (Auto)",
+                        "Gemini Voice ($_selectedLanguage)",
                         style: const TextStyle(
                             fontSize: 11,
                             fontWeight: FontWeight.bold,
@@ -509,19 +520,30 @@ class _CategoryAssistantScreenState extends State<CategoryAssistantScreen> {
                           Row(
                             mainAxisAlignment: MainAxisAlignment.end,
                             children: [
-                              IconButton(
+                              ElevatedButton.icon(
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: isSpeaking
+                                      ? Colors.red
+                                      : widget.categoryColor,
+                                  foregroundColor: Colors.white,
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 12, vertical: 6),
+                                  minimumSize: Size.zero,
+                                  tapTargetSize:
+                                      MaterialTapTargetSize.shrinkWrap,
+                                ),
                                 icon: Icon(
                                   isSpeaking
                                       ? Icons.stop_circle
                                       : Icons.volume_up,
-                                  color: isSpeaking
-                                      ? Colors.red
-                                      : widget.categoryColor,
-                                  size: 22,
+                                  size: 16,
                                 ),
-                                tooltip: isSpeaking
-                                    ? "Stop Voice"
-                                    : "Listen Human Voice ($_selectedLanguage)",
+                                label: Text(
+                                  isSpeaking ? "Stop" : "Listen",
+                                  style: const TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.bold),
+                                ),
                                 onPressed: () => _speak(
                                   msgId,
                                   message["text"] ?? "",
@@ -538,7 +560,7 @@ class _CategoryAssistantScreenState extends State<CategoryAssistantScreen> {
             ),
           ),
 
-          // BOTTOM CHAT INPUT BAR
+          // GEMINI-STYLE ANIMATED MIC BAR
           SafeArea(
             child: Container(
               padding: const EdgeInsets.all(12),
@@ -554,19 +576,39 @@ class _CategoryAssistantScreenState extends State<CategoryAssistantScreen> {
               ),
               child: Row(
                 children: [
-                  FloatingActionButton(
-                    heroTag: "${widget.categoryTitle}_mic",
-                    mini: true,
-                    backgroundColor:
-                        _isListening ? Colors.red : widget.categoryColor,
-                    onPressed: _startListening,
-                    tooltip: "Auto-Detect Voice Mic",
-                    child: Icon(
-                      _isListening ? Icons.stop : Icons.mic,
-                      color: Colors.white,
+                  // PULSING GEMINI MIC BUTTON
+                  ScaleTransition(
+                    scale: _isListening
+                        ? _micPulseAnimation
+                        : const AlwaysStoppedAnimation(1.0),
+                    child: Container(
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        boxShadow: _isListening
+                            ? [
+                                BoxShadow(
+                                  color: Colors.red.withOpacity(0.5),
+                                  blurRadius: 16,
+                                  spreadRadius: 4,
+                                ),
+                              ]
+                            : null,
+                      ),
+                      child: FloatingActionButton(
+                        heroTag: "${widget.categoryTitle}_mic",
+                        mini: true,
+                        backgroundColor:
+                            _isListening ? Colors.red : widget.categoryColor,
+                        onPressed: _startListening,
+                        tooltip: "Gemini Auto Voice Mic",
+                        child: Icon(
+                          _isListening ? Icons.graphic_eq : Icons.mic,
+                          color: Colors.white,
+                        ),
+                      ),
                     ),
                   ),
-                  const SizedBox(width: 8),
+                  const SizedBox(width: 10),
                   Expanded(
                     child: TextField(
                       controller: _controller,
@@ -574,8 +616,8 @@ class _CategoryAssistantScreenState extends State<CategoryAssistantScreen> {
                       onSubmitted: (_) => _sendMessage(),
                       decoration: InputDecoration(
                         hintText: _isListening
-                            ? "Listening (Auto-Detecting Language)..."
-                            : "Ask any ${_widgetCategoryLower()} query or speak...",
+                            ? "Listening (Gemini Auto-Detecting)..."
+                            : "Ask any ${_widgetCategoryLower()} query or click mic...",
                         filled: true,
                         fillColor: Colors.grey.shade100,
                         border: OutlineInputBorder(
@@ -614,8 +656,9 @@ class _CategoryAssistantScreenState extends State<CategoryAssistantScreen> {
   void dispose() {
     _controller.dispose();
     _scrollController.dispose();
+    _micPulseController.dispose();
     _speech.stop();
-    _speechService.stop();
+    _speechEngine.stop();
     super.dispose();
   }
 }
