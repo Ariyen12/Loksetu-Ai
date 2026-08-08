@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
-import 'package:flutter_tts/flutter_tts.dart';
+import '../services/elevenlabs_service.dart';
+import '../services/language_detector.dart';
+import '../services/farmer_knowledge_base.dart';
 
 class ChatScreen extends StatefulWidget {
   const ChatScreen({super.key});
@@ -14,7 +16,7 @@ class _ChatScreenState extends State<ChatScreen> {
   final ScrollController _scrollController = ScrollController();
 
   final stt.SpeechToText _speech = stt.SpeechToText();
-  final FlutterTts _tts = FlutterTts();
+  final ElevenLabsService _speechService = ElevenLabsService();
 
   bool _isListening = false;
   bool _speechAvailable = false;
@@ -35,44 +37,44 @@ class _ChatScreenState extends State<ChatScreen> {
       "id": "init_chat",
       "sender": "ai",
       "text":
-          "Namaste! 👋 I am LokSetu AI Assistant.\n\nPick one of the top preset suggestions below, or press the microphone icon to speak in your language.",
+          "Namaste! 👋 I am LokSetu Multilingual AI.\n\nPress the mic button and speak in any language — I will auto-detect your language and answer your queries.",
     },
   ];
 
   final List<Map<String, String>> _globalPresets = [
     {
-      "category": "Healthcare",
-      "query": "Ayushman Bharat Card (PM-JAY) application",
+      "category": "Agriculture",
+      "query": "Pest & Insects Control / PM-Kisan status",
       "answer":
-          "Ayushman Bharat (PM-JAY):\n1. Visit nearest CSC or empaneled hospital with Aadhaar & Ration Card.\n2. Get up to ₹5 Lakh free health coverage per family per year."
+          "PM-Kisan & Pest Advisory:\n1. For Yellow Rust / Pests: Spray Neem Oil (5ml/L) or Emamectin Benzoate (0.4g/L).\n2. For PM-Kisan: Check pmkisan.gov.in & ensure Aadhaar e-KYC is linked.\n3. Kisan Helpline: Dial toll-free 1800-180-1551 for free guidance."
+    },
+    {
+      "category": "Healthcare",
+      "query": "Ayushman Bharat Card & Teleconsultation",
+      "answer":
+          "Healthcare Support:\n1. Apply for Ayushman Bharat PM-JAY Card for ₹5 Lakh free health coverage per family.\n2. Free Doctor Consultations: Register at esanjeevaniopd.in.\n3. Ambulance: Call 108 for emergency hospital transport."
     },
     {
       "category": "Governance",
-      "query": "Apply for Income / Caste Certificate",
+      "query": "Income / Caste Certificate & e-District",
       "answer":
-          "Apply at your state e-District portal or local CSC center with Aadhaar card, address proof, and income details."
+          "Government Services:\n1. Apply for Certificates online at state e-District portal or local CSC center.\n2. Link Aadhaar with Ration Card at your local Fair Price Shop dealer."
     },
     {
       "category": "Education",
-      "query": "Post-Matric Scholarships application",
+      "query": "Post-Matric Scholarships & Skill Training",
       "answer":
-          "Register on National Scholarship Portal (scholarships.gov.in) with Aadhaar and bank details for direct scholarship credit."
-    },
-    {
-      "category": "Agriculture",
-      "query": "PM-Kisan Installment & e-KYC status",
-      "answer":
-          "Check status at pmkisan.gov.in. Ensure Aadhaar land seeding & OTP/biometric e-KYC are completed."
+          "Education & Skills:\n1. National Scholarship Portal: Apply at scholarships.gov.in.\n2. Free PMKVY Skill Courses: Enroll at local centers with job placement support."
     },
   ];
 
   @override
   void initState() {
     super.initState();
-    _initializeSpeechAndTts();
+    _initializeSpeech();
   }
 
-  Future<void> _initializeSpeechAndTts() async {
+  Future<void> _initializeSpeech() async {
     try {
       _speechAvailable = await _speech.initialize(
         onStatus: (status) {
@@ -96,62 +98,14 @@ class _ChatScreenState extends State<ChatScreen> {
       _speechAvailable = false;
     }
 
-    await _tts.setLanguage(_languages[_selectedLanguage] ?? "en-IN");
-    await _tts.setSpeechRate(0.46);
-    await _tts.setPitch(1.0);
-
-    _tts.setCompletionHandler(() {
-      if (mounted) {
-        setState(() {
-          _currentlySpeakingId = null;
-        });
-      }
-    });
-
     if (mounted) {
       setState(() {});
     }
   }
 
-  /// Cleans display text so TTS speaks naturally like a human without reading emojis or bullet numbers
-  String _cleanTextForSpeech(String rawText) {
-    // 1. Remove all Emoji characters & symbols
-    String cleaned = rawText.replaceAll(
-      RegExp(
-        r'[\u{1F300}-\u{1F9FF}]|[\u{1F600}-\u{1F64F}]|[\u{1F680}-\u{1F6FF}]|[\u{2600}-\u{26FF}]|[\u{2700}-\u{27BF}]|[\u{1F900}-\u{1F9FF}]|[\u{1F1E6}-\u{1F1FF}]|[\u{200D}]',
-        unicode: true,
-      ),
-      '',
-    );
-
-    // 2. Convert Indian Rupee symbol ₹ to spoken "rupees"
-    cleaned = cleaned.replaceAll('₹', ' rupees ');
-
-    // 3. Convert numbers and bullet lists into natural conversational pauses
-    cleaned = cleaned.replaceAll('\n1. ', '. First, ');
-    cleaned = cleaned.replaceAll('\n2. ', '. Second, ');
-    cleaned = cleaned.replaceAll('\n3. ', '. Third, ');
-    cleaned = cleaned.replaceAll('\n4. ', '. Fourth, ');
-    cleaned = cleaned.replaceAll('\n5. ', '. Fifth, ');
-    cleaned = cleaned.replaceAll('1. ', 'First, ');
-    cleaned = cleaned.replaceAll('2. ', 'Second, ');
-    cleaned = cleaned.replaceAll('3. ', 'Third, ');
-    cleaned = cleaned.replaceAll('• ', '. ');
-    cleaned = cleaned.replaceAll('\n', '. ');
-
-    // 4. Strip markdown formatting symbols like *, #, _, ~, `, etc.
-    cleaned = cleaned.replaceAll(RegExp(r'[\*\#\_\~`\[\]\(\)]'), '');
-
-    // 5. Clean multiple periods and spaces
-    cleaned = cleaned.replaceAll(RegExp(r'\.+'), '. ');
-    cleaned = cleaned.replaceAll(RegExp(r'\s+'), ' ').trim();
-
-    return cleaned;
-  }
-
   Future<void> _startListening() async {
     if (!_speechAvailable) {
-      _showMessage("Microphone unavailable or permission denied.");
+      _showMessage("Microphone unavailable or browser permission denied.");
       return;
     }
 
@@ -174,12 +128,24 @@ class _ChatScreenState extends State<ChatScreen> {
       onResult: (result) {
         if (!mounted) return;
 
+        final recognized = result.recognizedWords;
         setState(() {
-          _controller.text = result.recognizedWords;
+          _controller.text = recognized;
           _controller.selection = TextSelection.fromPosition(
             TextPosition(offset: _controller.text.length),
           );
         });
+
+        // AUTO-DETECT USER SPOKEN LANGUAGE
+        if (recognized.isNotEmpty) {
+          final detected = LanguageDetector.detect(recognized);
+          if (detected.languageName != _selectedLanguage) {
+            setState(() {
+              _selectedLanguage = detected.languageName;
+            });
+            _showMessage("Auto-Detected Language: ${detected.languageName}");
+          }
+        }
 
         if (result.finalResult) {
           _sendMessage();
@@ -211,6 +177,14 @@ class _ChatScreenState extends State<ChatScreen> {
     final message = _controller.text.trim();
     if (message.isEmpty) return;
 
+    // AUTO-DETECT LANGUAGE
+    final detected = LanguageDetector.detect(message);
+    if (detected.languageName != _selectedLanguage) {
+      setState(() {
+        _selectedLanguage = detected.languageName;
+      });
+    }
+
     final userMsgId = DateTime.now().millisecondsSinceEpoch.toString();
     setState(() {
       _messages.add({
@@ -222,7 +196,7 @@ class _ChatScreenState extends State<ChatScreen> {
     });
 
     _scrollToBottom();
-    await Future.delayed(const Duration(milliseconds: 500));
+    await Future.delayed(const Duration(milliseconds: 400));
     if (!mounted) return;
 
     final response = _getDemoResponse(message);
@@ -243,6 +217,17 @@ class _ChatScreenState extends State<ChatScreen> {
   String _getDemoResponse(String message) {
     final text = message.toLowerCase();
 
+    if (text.contains("farmer") ||
+        text.contains("crop") ||
+        text.contains("agriculture") ||
+        text.contains("kisan") ||
+        text.contains("pest") ||
+        text.contains("soil") ||
+        text.contains("keeda") ||
+        text.contains("fasal")) {
+      return FarmerKnowledgeBase.getAccurateFarmerAnswer(message, "Agriculture");
+    }
+
     if (text.contains("scholarship") ||
         text.contains("education") ||
         text.contains("school")) {
@@ -256,13 +241,6 @@ class _ChatScreenState extends State<ChatScreen> {
       return "Healthcare Assistance 🏥\n\n1. Apply for Ayushman Bharat PM-JAY Card for ₹5 Lakh health coverage.\n2. Get free doctor consultation on eSanjeevani portal at esanjeevaniopd.in.";
     }
 
-    if (text.contains("farmer") ||
-        text.contains("crop") ||
-        text.contains("agriculture") ||
-        text.contains("kisan")) {
-      return "Agriculture Support 🌾\n\n1. Check PM-Kisan status & e-KYC at pmkisan.gov.in.\n2. Call Kisan Call Center (1800-180-1551) for crop advice.";
-    }
-
     if (text.contains("government") ||
         text.contains("scheme") ||
         text.contains("ration") ||
@@ -270,30 +248,38 @@ class _ChatScreenState extends State<ChatScreen> {
       return "Governance & Schemes 🏛️\n\n1. Apply for Certificates at your state e-District portal.\n2. Complete Ration Card e-KYC at your nearest FPS dealer.";
     }
 
-    return "I am LokSetu AI. I can assist you with Healthcare, Governance, Education, and Agriculture.";
+    return FarmerKnowledgeBase.getAccurateFarmerAnswer(message, "General");
   }
 
   Future<void> _speak(String id, String text) async {
     if (_currentlySpeakingId == id) {
-      await _tts.stop();
+      await _speechService.stop();
       setState(() {
         _currentlySpeakingId = null;
       });
       return;
     }
 
-    await _tts.stop();
-    final speechText = _cleanTextForSpeech(text);
+    final localeId = _languages[_selectedLanguage] ?? "en-IN";
 
-    await _tts.setLanguage(_languages[_selectedLanguage] ?? "en-IN");
-    await _tts.setSpeechRate(0.46);
-    await _tts.setPitch(1.0);
-
-    setState(() {
-      _currentlySpeakingId = id;
-    });
-
-    await _tts.speak(speechText);
+    await _speechService.speak(
+      text: text,
+      localeId: localeId,
+      onStart: () {
+        if (mounted) {
+          setState(() {
+            _currentlySpeakingId = id;
+          });
+        }
+      },
+      onComplete: () {
+        if (mounted) {
+          setState(() {
+            _currentlySpeakingId = null;
+          });
+        }
+      },
+    );
   }
 
   void _scrollToBottom() {
@@ -326,7 +312,7 @@ class _ChatScreenState extends State<ChatScreen> {
               child: Icon(Icons.auto_awesome, color: Colors.white, size: 18),
             ),
             SizedBox(width: 10),
-            Text("LokSetu AI Chatbot"),
+            Text("LokSetu AI Voice Chatbot"),
           ],
         ),
         actions: [
@@ -340,12 +326,11 @@ class _ChatScreenState extends State<ChatScreen> {
                 child: Text(language, style: const TextStyle(fontSize: 13)),
               );
             }).toList(),
-            onChanged: (value) async {
+            onChanged: (value) {
               if (value == null) return;
               setState(() {
                 _selectedLanguage = value;
               });
-              await _tts.setLanguage(_languages[value] ?? "en-IN");
             },
           ),
           const SizedBox(width: 12),
@@ -387,7 +372,7 @@ class _ChatScreenState extends State<ChatScreen> {
                     label: const Text("Other..."),
                     backgroundColor: Colors.grey.shade200,
                     onPressed: () {
-                      _showMessage("Speak or type your custom query below.");
+                      _showMessage("Speak in your native language or type below.");
                     },
                   ),
                 ],
@@ -443,7 +428,7 @@ class _ChatScreenState extends State<ChatScreen> {
                                   color: isSpeaking ? Colors.red : Colors.blue,
                                   size: 20,
                                 ),
-                                tooltip: "Listen in $_selectedLanguage",
+                                tooltip: "Listen Natural Voice ($_selectedLanguage)",
                                 onPressed: () =>
                                     _speak(msgId, message["text"] ?? ""),
                               ),
@@ -469,6 +454,7 @@ class _ChatScreenState extends State<ChatScreen> {
                     mini: true,
                     backgroundColor: _isListening ? Colors.red : Colors.blue,
                     onPressed: _startListening,
+                    tooltip: "Auto-Detect Language Mic",
                     child: Icon(_isListening ? Icons.stop : Icons.mic),
                   ),
                   const SizedBox(width: 8),
@@ -479,8 +465,8 @@ class _ChatScreenState extends State<ChatScreen> {
                       onSubmitted: (_) => _sendMessage(),
                       decoration: InputDecoration(
                         hintText: _isListening
-                            ? "Listening in $_selectedLanguage..."
-                            : "Speak or type your query...",
+                            ? "Listening (Auto-Detecting Language)..."
+                            : "Speak in any language or type...",
                         filled: true,
                         fillColor: Colors.grey.shade100,
                         border: OutlineInputBorder(
@@ -515,7 +501,7 @@ class _ChatScreenState extends State<ChatScreen> {
     _controller.dispose();
     _scrollController.dispose();
     _speech.stop();
-    _tts.stop();
+    _speechService.stop();
     super.dispose();
   }
 }

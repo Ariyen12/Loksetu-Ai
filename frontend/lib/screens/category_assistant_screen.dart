@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
-import 'package:flutter_tts/flutter_tts.dart';
+import '../services/elevenlabs_service.dart';
+import '../services/language_detector.dart';
+import '../services/farmer_knowledge_base.dart';
 
 class CategorySuggestion {
   final String id;
@@ -40,7 +42,7 @@ class _CategoryAssistantScreenState extends State<CategoryAssistantScreen> {
   final ScrollController _scrollController = ScrollController();
 
   final stt.SpeechToText _speech = stt.SpeechToText();
-  final FlutterTts _tts = FlutterTts();
+  final ElevenLabsService _speechService = ElevenLabsService();
 
   bool _isListening = false;
   bool _speechAvailable = false;
@@ -61,7 +63,7 @@ class _CategoryAssistantScreenState extends State<CategoryAssistantScreen> {
   @override
   void initState() {
     super.initState();
-    _initializeSpeechAndTts();
+    _initializeSpeech();
     _addInitialGreeting();
   }
 
@@ -70,11 +72,11 @@ class _CategoryAssistantScreenState extends State<CategoryAssistantScreen> {
       "id": "init_msg",
       "sender": "ai",
       "text":
-          "Welcome to ${widget.categoryTitle} Services! 👋\nSelect one of the 3 most common queries below, or tap 'Other' to ask your custom question.",
+          "Welcome to ${widget.categoryTitle} Assistant! 👋\nPick one of the 3 popular queries below, or press the mic button to speak in your language.",
     });
   }
 
-  Future<void> _initializeSpeechAndTts() async {
+  Future<void> _initializeSpeech() async {
     try {
       _speechAvailable = await _speech.initialize(
         onStatus: (status) {
@@ -98,64 +100,14 @@ class _CategoryAssistantScreenState extends State<CategoryAssistantScreen> {
       _speechAvailable = false;
     }
 
-    await _tts.setLanguage(_languages[_selectedLanguage] ?? "en-IN");
-    await _tts.setSpeechRate(0.46); // Natural human reading pace
-    await _tts.setPitch(1.0); // Natural voice pitch
-
-    _tts.setCompletionHandler(() {
-      if (mounted) {
-        setState(() {
-          _currentlySpeakingId = null;
-        });
-      }
-    });
-
     if (mounted) {
       setState(() {});
     }
   }
 
-  /// Cleans display text so TTS speaks naturally like a human without reading emojis or bullet numbers
-  String _cleanTextForSpeech(String rawText) {
-    // 1. Remove all Emoji characters & symbols
-    String cleaned = rawText.replaceAll(
-      RegExp(
-        r'[\u{1F300}-\u{1F9FF}]|[\u{1F600}-\u{1F64F}]|[\u{1F680}-\u{1F6FF}]|[\u{2600}-\u{26FF}]|[\u{2700}-\u{27BF}]|[\u{1F900}-\u{1F9FF}]|[\u{1F1E6}-\u{1F1FF}]|[\u{200D}]',
-        unicode: true,
-      ),
-      '',
-    );
-
-    // 2. Convert Indian Rupee symbol ₹ to spoken "rupees"
-    cleaned = cleaned.replaceAll('₹', ' rupees ');
-
-    // 3. Convert numbers and bullet lists into natural conversational pauses
-    cleaned = cleaned.replaceAll('\n1. ', '. First, ');
-    cleaned = cleaned.replaceAll('\n2. ', '. Second, ');
-    cleaned = cleaned.replaceAll('\n3. ', '. Third, ');
-    cleaned = cleaned.replaceAll('\n4. ', '. Fourth, ');
-    cleaned = cleaned.replaceAll('\n5. ', '. Fifth, ');
-    cleaned = cleaned.replaceAll('1. ', 'First, ');
-    cleaned = cleaned.replaceAll('2. ', 'Second, ');
-    cleaned = cleaned.replaceAll('3. ', 'Third, ');
-    cleaned = cleaned.replaceAll('• ', '. ');
-    cleaned = cleaned.replaceAll('\n', '. ');
-
-    // 4. Strip markdown formatting symbols like *, #, _, ~, `, etc.
-    cleaned = cleaned.replaceAll(RegExp(r'[\*\#\_\~`\[\]\(\)]'), '');
-
-    // 5. Clean multiple periods and spaces
-    cleaned = cleaned.replaceAll(RegExp(r'\.+'), '. ');
-    cleaned = cleaned.replaceAll(RegExp(r'\s+'), ' ').trim();
-
-    return cleaned;
-  }
-
   Future<void> _startListening() async {
     if (!_speechAvailable) {
-      _showMessage(
-        "Microphone initialization failed or browser permission denied.",
-      );
+      _showMessage("Microphone unavailable or browser permission denied.");
       return;
     }
 
@@ -178,12 +130,24 @@ class _CategoryAssistantScreenState extends State<CategoryAssistantScreen> {
       onResult: (result) {
         if (!mounted) return;
 
+        final recognized = result.recognizedWords;
         setState(() {
-          _controller.text = result.recognizedWords;
+          _controller.text = recognized;
           _controller.selection = TextSelection.fromPosition(
             TextPosition(offset: _controller.text.length),
           );
         });
+
+        // AUTO-DETECT USER SPOKEN LANGUAGE
+        if (recognized.isNotEmpty) {
+          final detected = LanguageDetector.detect(recognized);
+          if (detected.languageName != _selectedLanguage) {
+            setState(() {
+              _selectedLanguage = detected.languageName;
+            });
+            _showMessage("Auto-Detected Language: ${detected.languageName}");
+          }
+        }
 
         if (result.finalResult) {
           _sendMessage();
@@ -216,6 +180,14 @@ class _CategoryAssistantScreenState extends State<CategoryAssistantScreen> {
     final message = _controller.text.trim();
     if (message.isEmpty) return;
 
+    // AUTO-DETECT LANGUAGE FROM TYPED/SPOKEN QUERY
+    final detected = LanguageDetector.detect(message);
+    if (detected.languageName != _selectedLanguage) {
+      setState(() {
+        _selectedLanguage = detected.languageName;
+      });
+    }
+
     final userMsgId = DateTime.now().millisecondsSinceEpoch.toString();
     setState(() {
       _messages.add({
@@ -227,8 +199,7 @@ class _CategoryAssistantScreenState extends State<CategoryAssistantScreen> {
     });
 
     _scrollToBottom();
-
-    await Future.delayed(const Duration(milliseconds: 500));
+    await Future.delayed(const Duration(milliseconds: 400));
     if (!mounted) return;
 
     final response = _generateSmartResponse(message);
@@ -247,6 +218,12 @@ class _CategoryAssistantScreenState extends State<CategoryAssistantScreen> {
   }
 
   String _generateSmartResponse(String query) {
+    // If category is Agriculture, use FarmerKnowledgeBase for deep accurate farming answers!
+    if (widget.categoryTitle == "Agriculture") {
+      return FarmerKnowledgeBase.getAccurateFarmerAnswer(
+          query, widget.categoryTitle);
+    }
+
     final text = query.toLowerCase();
 
     for (final sug in widget.suggestions) {
@@ -259,37 +236,55 @@ class _CategoryAssistantScreenState extends State<CategoryAssistantScreen> {
     }
 
     if (widget.categoryTitle == "Healthcare") {
-      return "For your healthcare concern regarding '$query':\n\n1. Visit your nearest Primary Health Centre or Community Health Centre.\n2. Emergency Helpline: Call 108 for instant ambulance service.\n3. Teleconsultation: Access free doctor teleconsultations on eSanjeevani portal at esanjeevaniopd.in.";
+      return "Healthcare Solution for '$query':\n\n"
+          "1. For Emergency Medical Help: Dial 108 for free instant ambulance.\n"
+          "2. Free Doctor Consultation: Register on eSanjeevani portal at esanjeevaniopd.in.\n"
+          "3. Ayushman Bharat Card: Visit nearest CSC center with Aadhaar & Ration Card for ₹5 Lakh annual health coverage.";
     } else if (widget.categoryTitle == "Governance") {
-      return "Regarding government service '$query':\n\n1. Applications can be submitted online at your state e-District portal or local CSC Center.\n2. Required documents: Aadhaar Card, Address Proof, and Income Certificate.\n3. National Helpline: Call 1915 for consumer or public grievance assistance.";
+      return "Governance & Certificate Guidance for '$query':\n\n"
+          "1. Official Certificates (Income/Caste/Residence): Apply online at your state e-District portal or local CSC center.\n"
+          "2. Ration Card e-KYC: Complete Aadhaar biometric linking at local Fair Price Shop (FPS) dealer.\n"
+          "3. Public Grievances: Call national helpline 1915 or register on pgportal.gov.in.";
     } else if (widget.categoryTitle == "Education") {
-      return "For your education query '$query':\n\n1. National Scholarship Portal: Apply at scholarships.gov.in for government stipends.\n2. Skill Development: Join free PMKVY courses with job placement support.\n3. Student Helpline: Reach out to your district education officer or school counselor.";
+      return "Education & Scholarship Guidance for '$query':\n\n"
+          "1. Government Scholarships: Apply on National Scholarship Portal at scholarships.gov.in.\n"
+          "2. Free Skill Training (PMKVY): Enroll at local PMKVY training centers for free certified skill courses with placement support.\n"
+          "3. RTE 25% Reserved Quota: Apply online for free private school admissions under Section 12(1)(c).";
     } else {
-      return "For your agriculture query '$query':\n\n1. PM-Kisan Support: Check installment status at pmkisan.gov.in.\n2. Crop Insurance: Report weather or pest damage within 72 hours on PMFBY app.\n3. Kisan Call Center: Dial 1800-180-1551 toll-free for expert farming guidance.";
+      return FarmerKnowledgeBase.getAccurateFarmerAnswer(
+          query, widget.categoryTitle);
     }
   }
 
   Future<void> _speak(String id, String text) async {
     if (_currentlySpeakingId == id) {
-      await _tts.stop();
+      await _speechService.stop();
       setState(() {
         _currentlySpeakingId = null;
       });
       return;
     }
 
-    await _tts.stop();
-    final speechText = _cleanTextForSpeech(text);
+    final localeId = _languages[_selectedLanguage] ?? "en-IN";
 
-    await _tts.setLanguage(_languages[_selectedLanguage] ?? "en-IN");
-    await _tts.setSpeechRate(0.46);
-    await _tts.setPitch(1.0);
-
-    setState(() {
-      _currentlySpeakingId = id;
-    });
-
-    await _tts.speak(speechText);
+    await _speechService.speak(
+      text: text,
+      localeId: localeId,
+      onStart: () {
+        if (mounted) {
+          setState(() {
+            _currentlySpeakingId = id;
+          });
+        }
+      },
+      onComplete: () {
+        if (mounted) {
+          setState(() {
+            _currentlySpeakingId = null;
+          });
+        }
+      },
+    );
   }
 
   void _scrollToBottom() {
@@ -326,13 +321,12 @@ class _CategoryAssistantScreenState extends State<CategoryAssistantScreen> {
         actions: [
           PopupMenuButton<String>(
             icon: const Icon(Icons.translate, color: Colors.white),
-            tooltip: "Select Language",
+            tooltip: "Language: $_selectedLanguage (Auto-Detect Active)",
             initialValue: _selectedLanguage,
-            onSelected: (lang) async {
+            onSelected: (lang) {
               setState(() {
                 _selectedLanguage = lang;
               });
-              await _tts.setLanguage(_languages[lang] ?? "en-IN");
               _showMessage("Language set to $lang");
             },
             itemBuilder: (context) {
@@ -382,12 +376,16 @@ class _CategoryAssistantScreenState extends State<CategoryAssistantScreen> {
                     ),
                     const Spacer(),
                     Chip(
+                      avatar: const Icon(Icons.auto_awesome,
+                          size: 12, color: Colors.white),
                       label: Text(
-                        _selectedLanguage,
+                        "$_selectedLanguage (Auto)",
                         style: const TextStyle(
-                            fontSize: 11, fontWeight: FontWeight.bold),
+                            fontSize: 11,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white),
                       ),
-                      backgroundColor: widget.categoryColor.withOpacity(0.15),
+                      backgroundColor: widget.categoryColor,
                       padding: EdgeInsets.zero,
                       materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                     ),
@@ -446,7 +444,7 @@ class _CategoryAssistantScreenState extends State<CategoryAssistantScreen> {
                         shadowColor: Colors.black12,
                         onPressed: () {
                           _showMessage(
-                              "Type your query below or press the Mic icon to speak.");
+                              "Speak in your native language or type below.");
                         },
                       ),
                     ],
@@ -523,7 +521,7 @@ class _CategoryAssistantScreenState extends State<CategoryAssistantScreen> {
                                 ),
                                 tooltip: isSpeaking
                                     ? "Stop Voice"
-                                    : "Listen in ${_selectedLanguage}",
+                                    : "Listen Human Voice ($_selectedLanguage)",
                                 onPressed: () => _speak(
                                   msgId,
                                   message["text"] ?? "",
@@ -562,7 +560,7 @@ class _CategoryAssistantScreenState extends State<CategoryAssistantScreen> {
                     backgroundColor:
                         _isListening ? Colors.red : widget.categoryColor,
                     onPressed: _startListening,
-                    tooltip: "Speak in $_selectedLanguage",
+                    tooltip: "Auto-Detect Voice Mic",
                     child: Icon(
                       _isListening ? Icons.stop : Icons.mic,
                       color: Colors.white,
@@ -576,8 +574,8 @@ class _CategoryAssistantScreenState extends State<CategoryAssistantScreen> {
                       onSubmitted: (_) => _sendMessage(),
                       decoration: InputDecoration(
                         hintText: _isListening
-                            ? "Listening in $_selectedLanguage..."
-                            : "Ask any ${_widgetCategoryLower()} query or click mic...",
+                            ? "Listening (Auto-Detecting Language)..."
+                            : "Ask any ${_widgetCategoryLower()} query or speak...",
                         filled: true,
                         fillColor: Colors.grey.shade100,
                         border: OutlineInputBorder(
@@ -617,7 +615,7 @@ class _CategoryAssistantScreenState extends State<CategoryAssistantScreen> {
     _controller.dispose();
     _scrollController.dispose();
     _speech.stop();
-    _tts.stop();
+    _speechService.stop();
     super.dispose();
   }
 }
