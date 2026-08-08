@@ -1,8 +1,9 @@
+import 'dart:js' as js;
 import 'package:flutter/material.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
 import '../services/gemini_voice_engine.dart';
 import '../services/language_detector.dart';
-import '../services/farmer_knowledge_base.dart';
+import '../services/ai_service.dart';
 
 class ChatScreen extends StatefulWidget {
   const ChatScreen({super.key});
@@ -36,19 +37,20 @@ class _ChatScreenState extends State<ChatScreen>
     "Manipuri": "mni-IN",
   };
 
-  final List<Map<String, String>> _messages = [
+  final List<Map<String, dynamic>> _messages = [
     {
       "id": "init_chat",
       "sender": "ai",
       "text":
-          "Namaste! 👋 I am LokSetu Multilingual AI.\n\nPress the mic button and speak in any language — I will auto-detect your language and answer with high quality human voice.",
+          "Namaste! 👋 I am LokSetu Open AI Assistant.\n\nAsk me ANYTHING in your native language — I will answer accurately, provide Gemini & ChatGPT research links, and read with human voice.",
+      "links": <String>[],
     },
   ];
 
   final List<Map<String, String>> _globalPresets = [
     {
       "category": "Agriculture",
-      "query": "Pest & Insects Control / PM-Kisan status",
+      "query": "Pest & Crop Disease Control / PM-Kisan",
       "answer":
           "PM-Kisan & Pest Advisory:\n1. For Yellow Rust / Pests: Spray Neem Oil (5ml/L) or Emamectin Benzoate (0.4g/L).\n2. For PM-Kisan: Check pmkisan.gov.in & ensure Aadhaar e-KYC is linked.\n3. Kisan Helpline: Dial toll-free 1800-180-1551 for free guidance."
     },
@@ -149,14 +151,13 @@ class _ChatScreenState extends State<ChatScreen>
           );
         });
 
-        // AUTO-DETECT USER SPOKEN LANGUAGE
         if (recognized.isNotEmpty) {
           final detected = LanguageDetector.detect(recognized);
           if (detected.languageName != _selectedLanguage) {
             setState(() {
               _selectedLanguage = detected.languageName;
             });
-            _showMessage("Gemini Auto-Detected: ${detected.languageName}");
+            _showMessage("Auto-Detected Language: ${detected.languageName}");
           }
         }
 
@@ -174,11 +175,16 @@ class _ChatScreenState extends State<ChatScreen>
         "id": "${msgId}_u",
         "sender": "user",
         "text": preset["query"]!,
+        "links": <String>[],
       });
       _messages.add({
         "id": "${msgId}_ai",
         "sender": "ai",
         "text": preset["answer"]!,
+        "links": [
+          "https://gemini.google.com/search?q=${Uri.encodeComponent(preset['query']!)} (Gemini Research)",
+          "https://services.india.gov.in (Official Govt Portal)"
+        ],
       });
     });
 
@@ -203,64 +209,33 @@ class _ChatScreenState extends State<ChatScreen>
         "id": "${userMsgId}_u",
         "sender": "user",
         "text": message,
+        "links": <String>[],
       });
       _controller.clear();
     });
 
     _scrollToBottom();
-    await Future.delayed(const Duration(milliseconds: 350));
+    await Future.delayed(const Duration(milliseconds: 300));
     if (!mounted) return;
 
-    final response = _getDemoResponse(message);
-    final aiMsgId = DateTime.now().millisecondsSinceEpoch.toString();
+    final aiResult = await LokSetuAIService.getAnswer(
+      query: message,
+      currentCategory: "General",
+      activeLanguage: _selectedLanguage,
+    );
 
+    final aiMsgId = DateTime.now().millisecondsSinceEpoch.toString();
     setState(() {
       _messages.add({
         "id": "${aiMsgId}_ai",
         "sender": "ai",
-        "text": response,
+        "text": aiResult.text,
+        "links": aiResult.researchLinks,
       });
     });
 
     _scrollToBottom();
-    await _speak("${aiMsgId}_ai", response);
-  }
-
-  String _getDemoResponse(String message) {
-    final text = message.toLowerCase();
-
-    if (text.contains("farmer") ||
-        text.contains("crop") ||
-        text.contains("agriculture") ||
-        text.contains("kisan") ||
-        text.contains("pest") ||
-        text.contains("soil") ||
-        text.contains("keeda") ||
-        text.contains("fasal")) {
-      return FarmerKnowledgeBase.getAccurateFarmerAnswer(message, "Agriculture");
-    }
-
-    if (text.contains("scholarship") ||
-        text.contains("education") ||
-        text.contains("school")) {
-      return "Education & Scholarships 🎓\n\n1. Register on scholarships.gov.in for government post-matric stipends.\n2. Free PMKVY Skill courses with job assistance available.";
-    }
-
-    if (text.contains("hospital") ||
-        text.contains("doctor") ||
-        text.contains("health") ||
-        text.contains("ayushman")) {
-      return "Healthcare Assistance 🏥\n\n1. Apply for Ayushman Bharat PM-JAY Card for ₹5 Lakh health coverage.\n2. Get free doctor consultation on eSanjeevani portal at esanjeevaniopd.in.";
-    }
-
-    if (text.contains("government") ||
-        text.contains("scheme") ||
-        text.contains("ration") ||
-        text.contains("certificate")) {
-      return "Governance & Schemes 🏛️\n\n1. Apply for Certificates at your state e-District portal.\n2. Complete Ration Card e-KYC at your nearest FPS dealer.";
-    }
-
-    return FarmerKnowledgeBase.getAccurateFarmerAnswer(message, "General");
+    await _speak("${aiMsgId}_ai", aiResult.text);
   }
 
   Future<void> _speak(String id, String text) async {
@@ -292,6 +267,15 @@ class _ChatScreenState extends State<ChatScreen>
         }
       },
     );
+  }
+
+  void _launchUrl(String rawUrl) {
+    final linkOnly = rawUrl.split(' ').first;
+    try {
+      js.context.callMethod('open', [linkOnly, '_blank']);
+    } catch (_) {
+      _showMessage("Opening: $linkOnly");
+    }
   }
 
   void _scrollToBottom() {
@@ -381,10 +365,10 @@ class _ChatScreenState extends State<ChatScreen>
                       child: Icon(Icons.more_horiz,
                           color: Colors.white, size: 14),
                     ),
-                    label: const Text("Other..."),
+                    label: const Text("Other (Ask ANY Question)..."),
                     backgroundColor: Colors.grey.shade200,
                     onPressed: () {
-                      _showMessage("Speak in your native language or type below.");
+                      _showMessage("Ask ANY question in your language below.");
                     },
                   ),
                 ],
@@ -392,7 +376,7 @@ class _ChatScreenState extends State<ChatScreen>
             ),
           ),
 
-          // CHAT MESSAGES
+          // CHAT MESSAGES WITH RESEARCH LINKS
           Expanded(
             child: ListView.builder(
               controller: _scrollController,
@@ -403,15 +387,17 @@ class _ChatScreenState extends State<ChatScreen>
                 final isUser = message["sender"] == "user";
                 final msgId = message["id"] ?? index.toString();
                 final isSpeaking = _currentlySpeakingId == msgId;
+                final List<String> links =
+                    (message["links"] as List<dynamic>?)?.cast<String>() ?? [];
 
                 return Align(
                   alignment:
                       isUser ? Alignment.centerRight : Alignment.centerLeft,
                   child: Container(
                     constraints: BoxConstraints(
-                      maxWidth: MediaQuery.of(context).size.width * 0.80,
+                      maxWidth: MediaQuery.of(context).size.width * 0.84,
                     ),
-                    margin: const EdgeInsets.only(bottom: 12),
+                    margin: const EdgeInsets.only(bottom: 14),
                     padding: const EdgeInsets.all(14),
                     decoration: BoxDecoration(
                       color: isUser ? Colors.blue.shade600 : Colors.grey.shade200,
@@ -425,10 +411,55 @@ class _ChatScreenState extends State<ChatScreen>
                           style: TextStyle(
                             color: isUser ? Colors.white : Colors.black87,
                             fontSize: 15,
+                            height: 1.35,
                           ),
                         ),
-                        if (!isUser) ...[
+
+                        // VERIFIED RESEARCH LINKS
+                        if (!isUser && links.isNotEmpty) ...[
+                          const SizedBox(height: 12),
+                          const Divider(height: 1, thickness: 1),
+                          const SizedBox(height: 8),
+                          const Row(
+                            children: [
+                              Icon(Icons.link_rounded,
+                                  size: 14, color: Colors.blue),
+                              SizedBox(width: 4),
+                              Text(
+                                "Gemini & Verified Research Links:",
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.blue,
+                                ),
+                              ),
+                            ],
+                          ),
                           const SizedBox(height: 6),
+                          Wrap(
+                            spacing: 6,
+                            runSpacing: 6,
+                            children: links.map((link) {
+                              return ActionChip(
+                                avatar: const Icon(Icons.open_in_new,
+                                    size: 12, color: Colors.blue),
+                                label: Text(
+                                  link.replaceAll(RegExp(r'https?://'), ''),
+                                  style: const TextStyle(
+                                      fontSize: 11,
+                                      color: Colors.blue,
+                                      fontWeight: FontWeight.w600),
+                                ),
+                                backgroundColor: Colors.blue.shade50,
+                                onPressed: () => _launchUrl(link),
+                              );
+                            }).toList(),
+                          ),
+                        ],
+
+                        // LISTEN BUTTON
+                        if (!isUser) ...[
+                          const SizedBox(height: 8),
                           Row(
                             mainAxisAlignment: MainAxisAlignment.end,
                             children: [
@@ -512,8 +543,8 @@ class _ChatScreenState extends State<ChatScreen>
                       onSubmitted: (_) => _sendMessage(),
                       decoration: InputDecoration(
                         hintText: _isListening
-                            ? "Listening (Gemini Auto-Detecting)..."
-                            : "Speak in any language or type...",
+                            ? "Listening (Ask ANYTHING)..."
+                            : "Ask ANY question or speak...",
                         filled: true,
                         fillColor: Colors.grey.shade100,
                         border: OutlineInputBorder(

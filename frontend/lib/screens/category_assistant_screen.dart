@@ -1,8 +1,9 @@
+import 'dart:js' as js;
 import 'package:flutter/material.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
 import '../services/gemini_voice_engine.dart';
 import '../services/language_detector.dart';
-import '../services/farmer_knowledge_base.dart';
+import '../services/ai_service.dart';
 
 class CategorySuggestion {
   final String id;
@@ -62,7 +63,7 @@ class _CategoryAssistantScreenState extends State<CategoryAssistantScreen>
     "Manipuri": "mni-IN",
   };
 
-  final List<Map<String, String>> _messages = [];
+  final List<Map<String, dynamic>> _messages = [];
 
   @override
   void initState() {
@@ -85,7 +86,8 @@ class _CategoryAssistantScreenState extends State<CategoryAssistantScreen>
       "id": "init_msg",
       "sender": "ai",
       "text":
-          "Welcome to ${widget.categoryTitle} Gemini Voice Assistant! 🎙️\n\nTap the microphone and speak naturally in your language — I will auto-detect your language and answer with high quality human voice.",
+          "Welcome to ${widget.categoryTitle} Open AI Assistant! 🌐\n\nAsk ANY question (Farming, Healthcare, Governance, Education, Tech, General Knowledge). I will answer accurately and provide Gemini & ChatGPT research links.",
+      "links": <String>[],
     });
   }
 
@@ -151,14 +153,13 @@ class _CategoryAssistantScreenState extends State<CategoryAssistantScreen>
           );
         });
 
-        // GEMINI AUTO-LANGUAGE DETECTION
         if (recognized.isNotEmpty) {
           final detected = LanguageDetector.detect(recognized);
           if (detected.languageName != _selectedLanguage) {
             setState(() {
               _selectedLanguage = detected.languageName;
             });
-            _showMessage("Gemini Auto-Detected: ${detected.languageName}");
+            _showMessage("Auto-Detected Language: ${detected.languageName}");
           }
         }
 
@@ -176,12 +177,17 @@ class _CategoryAssistantScreenState extends State<CategoryAssistantScreen>
         "id": "${msgId}_u",
         "sender": "user",
         "text": suggestion.title,
+        "links": <String>[],
       });
 
       _messages.add({
         "id": "${msgId}_ai",
         "sender": "ai",
         "text": suggestion.answer,
+        "links": [
+          "https://gemini.google.com/search?q=${Uri.encodeComponent(suggestion.title)} (Gemini Research)",
+          "https://services.india.gov.in (Official Govt Portal)",
+        ],
       });
     });
 
@@ -206,65 +212,33 @@ class _CategoryAssistantScreenState extends State<CategoryAssistantScreen>
         "id": "${userMsgId}_u",
         "sender": "user",
         "text": message,
+        "links": <String>[],
       });
       _controller.clear();
     });
 
     _scrollToBottom();
-    await Future.delayed(const Duration(milliseconds: 350));
+    await Future.delayed(const Duration(milliseconds: 300));
     if (!mounted) return;
 
-    final response = _generateSmartResponse(message);
-    final aiMsgId = DateTime.now().millisecondsSinceEpoch.toString();
+    final aiResult = await LokSetuAIService.getAnswer(
+      query: message,
+      currentCategory: widget.categoryTitle,
+      activeLanguage: _selectedLanguage,
+    );
 
+    final aiMsgId = DateTime.now().millisecondsSinceEpoch.toString();
     setState(() {
       _messages.add({
         "id": "${aiMsgId}_ai",
         "sender": "ai",
-        "text": response,
+        "text": aiResult.text,
+        "links": aiResult.researchLinks,
       });
     });
 
     _scrollToBottom();
-    await _speak("${aiMsgId}_ai", response);
-  }
-
-  String _generateSmartResponse(String query) {
-    if (widget.categoryTitle == "Agriculture") {
-      return FarmerKnowledgeBase.getAccurateFarmerAnswer(
-          query, widget.categoryTitle);
-    }
-
-    final text = query.toLowerCase();
-
-    for (final sug in widget.suggestions) {
-      if (text.contains(sug.title.toLowerCase()) ||
-          sug.title.toLowerCase().split(' ').any(
-                (w) => w.length > 3 && text.contains(w),
-              )) {
-        return sug.answer;
-      }
-    }
-
-    if (widget.categoryTitle == "Healthcare") {
-      return "Healthcare Solution for '$query':\n\n"
-          "1. For Emergency Help: Dial 108 for free instant ambulance.\n"
-          "2. Free Doctor Consultations: Register at esanjeevaniopd.in.\n"
-          "3. Ayushman Bharat Card: Visit nearest CSC center with Aadhaar & Ration Card for ₹5 Lakh annual medical coverage.";
-    } else if (widget.categoryTitle == "Governance") {
-      return "Governance & Certificate Guidance for '$query':\n\n"
-          "1. Official Certificates (Income/Caste/Residence): Apply online at your state e-District portal or local CSC center.\n"
-          "2. Ration Card e-KYC: Complete Aadhaar biometric linking at local Fair Price Shop dealer.\n"
-          "3. Public Grievances: Call national helpline 1915 or register on pgportal.gov.in.";
-    } else if (widget.categoryTitle == "Education") {
-      return "Education & Scholarship Guidance for '$query':\n\n"
-          "1. Government Scholarships: Apply on National Scholarship Portal at scholarships.gov.in.\n"
-          "2. Free Skill Training (PMKVY): Enroll at local PMKVY training centers for free certified skill courses with placement support.\n"
-          "3. RTE 25% Reserved Quota: Apply online for free private school admissions under Section 12(1)(c).";
-    } else {
-      return FarmerKnowledgeBase.getAccurateFarmerAnswer(
-          query, widget.categoryTitle);
-    }
+    await _speak("${aiMsgId}_ai", aiResult.text);
   }
 
   Future<void> _speak(String id, String text) async {
@@ -296,6 +270,15 @@ class _CategoryAssistantScreenState extends State<CategoryAssistantScreen>
         }
       },
     );
+  }
+
+  void _launchUrl(String rawUrl) {
+    final linkOnly = rawUrl.split(' ').first;
+    try {
+      js.context.callMethod('open', [linkOnly, '_blank']);
+    } catch (_) {
+      _showMessage("Opening: $linkOnly");
+    }
   }
 
   void _scrollToBottom() {
@@ -332,7 +315,7 @@ class _CategoryAssistantScreenState extends State<CategoryAssistantScreen>
         actions: [
           PopupMenuButton<String>(
             icon: const Icon(Icons.translate, color: Colors.white),
-            tooltip: "Language: $_selectedLanguage (Gemini Auto)",
+            tooltip: "Language: $_selectedLanguage (Auto-Detect)",
             initialValue: _selectedLanguage,
             onSelected: (lang) {
               setState(() {
@@ -387,11 +370,11 @@ class _CategoryAssistantScreenState extends State<CategoryAssistantScreen>
                     ),
                     const Spacer(),
                     Chip(
-                      avatar: const Icon(Icons.graphic_eq,
+                      avatar: const Icon(Icons.travel_explore,
                           size: 12, color: Colors.white),
-                      label: Text(
-                        "Gemini Voice ($_selectedLanguage)",
-                        style: const TextStyle(
+                      label: const Text(
+                        "Gemini & Research Active",
+                        style: TextStyle(
                             fontSize: 11,
                             fontWeight: FontWeight.bold,
                             color: Colors.white),
@@ -443,7 +426,7 @@ class _CategoryAssistantScreenState extends State<CategoryAssistantScreen>
                               color: Colors.white, size: 16),
                         ),
                         label: const Text(
-                          "Other (Custom Query / Voice)...",
+                          "Other (Ask ANY Question)...",
                           style: TextStyle(
                             fontSize: 13,
                             fontWeight: FontWeight.bold,
@@ -455,7 +438,7 @@ class _CategoryAssistantScreenState extends State<CategoryAssistantScreen>
                         shadowColor: Colors.black12,
                         onPressed: () {
                           _showMessage(
-                              "Speak in your native language or type below.");
+                              "Ask ANY question in your language below.");
                         },
                       ),
                     ],
@@ -465,7 +448,7 @@ class _CategoryAssistantScreenState extends State<CategoryAssistantScreen>
             ),
           ),
 
-          // CHAT MESSAGES LIST
+          // CHAT MESSAGES LIST WITH RESEARCH LINKS
           Expanded(
             child: ListView.builder(
               controller: _scrollController,
@@ -476,15 +459,17 @@ class _CategoryAssistantScreenState extends State<CategoryAssistantScreen>
                 final isUser = message["sender"] == "user";
                 final msgId = message["id"] ?? index.toString();
                 final isSpeaking = _currentlySpeakingId == msgId;
+                final List<String> links =
+                    (message["links"] as List<dynamic>?)?.cast<String>() ?? [];
 
                 return Align(
                   alignment:
                       isUser ? Alignment.centerRight : Alignment.centerLeft,
                   child: Container(
                     constraints: BoxConstraints(
-                      maxWidth: MediaQuery.of(context).size.width * 0.82,
+                      maxWidth: MediaQuery.of(context).size.width * 0.84,
                     ),
-                    margin: const EdgeInsets.only(bottom: 12),
+                    margin: const EdgeInsets.only(bottom: 14),
                     padding: const EdgeInsets.all(14),
                     decoration: BoxDecoration(
                       color: isUser
@@ -515,6 +500,50 @@ class _CategoryAssistantScreenState extends State<CategoryAssistantScreen>
                             height: 1.35,
                           ),
                         ),
+
+                        // RESEARCH & SOURCE LINKS
+                        if (!isUser && links.isNotEmpty) ...[
+                          const SizedBox(height: 12),
+                          const Divider(height: 1, thickness: 1),
+                          const SizedBox(height: 8),
+                          const Row(
+                            children: [
+                              Icon(Icons.link_rounded,
+                                  size: 14, color: Colors.blue),
+                              SizedBox(width: 4),
+                              Text(
+                                "Verified Research & Source Links:",
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.blue,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 6),
+                          Wrap(
+                            spacing: 6,
+                            runSpacing: 6,
+                            children: links.map((link) {
+                              return ActionChip(
+                                avatar: const Icon(Icons.open_in_new,
+                                    size: 12, color: Colors.blue),
+                                label: Text(
+                                  link.replaceAll(RegExp(r'https?://'), ''),
+                                  style: const TextStyle(
+                                      fontSize: 11,
+                                      color: Colors.blue,
+                                      fontWeight: FontWeight.w600),
+                                ),
+                                backgroundColor: Colors.blue.shade50,
+                                onPressed: () => _launchUrl(link),
+                              );
+                            }).toList(),
+                          ),
+                        ],
+
+                        // LISTEN BUTTON
                         if (!isUser) ...[
                           const SizedBox(height: 8),
                           Row(
@@ -576,7 +605,6 @@ class _CategoryAssistantScreenState extends State<CategoryAssistantScreen>
               ),
               child: Row(
                 children: [
-                  // PULSING GEMINI MIC BUTTON
                   ScaleTransition(
                     scale: _isListening
                         ? _micPulseAnimation
@@ -616,8 +644,8 @@ class _CategoryAssistantScreenState extends State<CategoryAssistantScreen>
                       onSubmitted: (_) => _sendMessage(),
                       decoration: InputDecoration(
                         hintText: _isListening
-                            ? "Listening (Gemini Auto-Detecting)..."
-                            : "Ask any ${_widgetCategoryLower()} query or click mic...",
+                            ? "Listening (Ask ANYTHING)..."
+                            : "Ask ANY question or speak...",
                         filled: true,
                         fillColor: Colors.grey.shade100,
                         border: OutlineInputBorder(
@@ -646,10 +674,6 @@ class _CategoryAssistantScreenState extends State<CategoryAssistantScreen>
         ],
       ),
     );
-  }
-
-  String _widgetCategoryLower() {
-    return widget.categoryTitle.toLowerCase();
   }
 
   @override
