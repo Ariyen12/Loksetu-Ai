@@ -5,9 +5,10 @@
 
   <meta charset="UTF-8">
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <meta name="description" content="LokSetu AI - Multilingual Citizen & Farmer Platform">
 
-  <!-- Cache Control -->
+  <!-- Cache Control (Prevent Stale Code) -->
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
@@ -16,13 +17,68 @@
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black">
   <meta name="apple-mobile-web-app-title" content="LokSetu AI">
-  <link rel="apple-touch-icon" href="icons/Icon-192.png">
+  <link rel="apple-touch-icon" href="favicon.png">
 
   <!-- Favicon -->
   <link rel="icon" type="image/png" href="favicon.png"/>
 
-  <title>LokSetu AI</title>
+  <title>LokSetu AI - Citizen & Farmer Assistant</title>
   <link rel="manifest" href="manifest.json">
+
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      background-color: #0F172A;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    }
+
+    #loading-container {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(135deg, #0F172A 0%, #1E3A8A 100%);
+      color: white;
+      z-index: 99999;
+      transition: opacity 0.5s ease;
+    }
+
+    #loading-logo {
+      width: 130px;
+      height: 130px;
+      border-radius: 50%;
+      box-shadow: 0 0 35px rgba(249, 115, 22, 0.5), 0 0 25px rgba(34, 197, 94, 0.4);
+      background: white;
+      padding: 8px;
+      margin-bottom: 24px;
+      animation: pulseLogo 2s infinite ease-in-out;
+    }
+
+    @keyframes pulseLogo {
+      0% { transform: scale(0.96); }
+      50% { transform: scale(1.04); }
+      100% { transform: scale(0.96); }
+    }
+
+    .spinner {
+      width: 36px;
+      height: 36px;
+      border: 4px solid rgba(255, 255, 255, 0.2);
+      border-top-color: #3B82F6;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+  </style>
 
   <script>
     // Force unregister stale service worker to ensure latest code loads
@@ -34,32 +90,36 @@
       });
     }
 
-    // LokSetu Sweet & Natural Human Voice Engine (No Robotic Reading / No "Dot" Reading)
+    // High Quality Natural Voice Engine
     window.LokSetuVoiceEngine = {
       voices: [],
       isSpeaking: false,
+
       init: function() {
         if ('speechSynthesis' in window) {
-          window.speechSynthesis.onvoiceschanged = () => {
+          const loadVoices = () => {
             this.voices = window.speechSynthesis.getVoices();
           };
-          this.voices = window.speechSynthesis.getVoices();
+          loadVoices();
+          if (window.speechSynthesis.onvoiceschanged !== undefined) {
+            window.speechSynthesis.onvoiceschanged = loadVoices;
+          }
         }
       },
+
       speakText: function(text, langCode) {
         if (!('speechSynthesis' in window)) return;
         window.speechSynthesis.cancel();
         this.isSpeaking = true;
 
-        // 1. Remove Emojis
+        // 1. Clean Emojis & Symbols
         let cleaned = text.replace(/[\u{1F300}-\u{1F9FF}]|[\u{1F600}-\u{1F64F}]|[\u{1F680}-\u{1F6FF}]|[\u{2600}-\u{26FF}]|[\u{2700}-\u{27BF}]|[\u{1F900}-\u{1F9FF}]|[\u{1F1E6}-\u{1F1FF}]/gu, '');
         
-        // 2. Replace bullet numbers & currency
+        // 2. Replace bullet points & currency gently
         cleaned = cleaned.replace(/₹/g, ' rupees ');
-        cleaned = cleaned.replace(/1\. /g, ' First ');
-        cleaned = cleaned.replace(/2\. /g, ' Second ');
-        cleaned = cleaned.replace(/3\. /g, ' Third ');
-        cleaned = cleaned.replace(/4\. /g, ' Fourth ');
+        cleaned = cleaned.replace(/1\. /g, ' ');
+        cleaned = cleaned.replace(/2\. /g, ' ');
+        cleaned = cleaned.replace(/3\. /g, ' ');
 
         // 3. REMOVE ALL PUNCTUATION MARKS SO TTS NEVER READS "DOT" OR "PERIOD"
         cleaned = cleaned.replace(/[\.\,\:\;\-\*\#\_\~`\[\]\(\)\?\!\"\'\/\\]/g, ' ');
@@ -75,21 +135,30 @@
         }
 
         let langPrefix = targetLang.split('-')[0];
-        // Select sweet female / natural voice
-        let bestVoice = this.voices.find(v => v.lang.startsWith(langPrefix) && (v.name.includes('Female') || v.name.includes('Google') || v.name.includes('Natural') || v.name.includes('Neural')));
+        
+        // Select Neural / Natural / Premium Google Voice
+        let bestVoice = this.voices.find(v => 
+          v.lang.startsWith(langPrefix) && 
+          (v.name.includes('Natural') || v.name.includes('Neural') || v.name.includes('Google') || v.name.includes('Online') || v.name.includes('Premium'))
+        );
+
         if (!bestVoice) {
           bestVoice = this.voices.find(v => v.lang.startsWith(langPrefix));
         }
 
-        if (bestVoice) utterance.voice = bestVoice;
-        utterance.rate = 0.88; // Sweet, gentle human pace
-        utterance.pitch = 1.05; // Warm, sweet human pitch
+        if (bestVoice) {
+          utterance.voice = bestVoice;
+        }
+
+        utterance.rate = 0.90; // Natural, gentle human speed
+        utterance.pitch = 1.0;  // Sweet, realistic pitch
 
         utterance.onend = () => { this.isSpeaking = false; };
         utterance.onerror = () => { this.isSpeaking = false; };
 
         window.speechSynthesis.speak(utterance);
       },
+
       stopSpeech: function() {
         this.isSpeaking = false;
         if ('speechSynthesis' in window) {
@@ -97,10 +166,28 @@
         }
       }
     };
+
     window.LokSetuVoiceEngine.init();
+
+    // Remove loading container once Flutter boots
+    window.addEventListener('flutter-first-frame', function () {
+      const el = document.getElementById('loading-container');
+      if (el) {
+        el.style.opacity = '0';
+        setTimeout(() => el.remove(), 500);
+      }
+    });
   </script>
 </head>
 <body>
+  <!-- LOADING SCREEN WITH OFFICIAL LOKSETU LOGO -->
+  <div id="loading-container">
+    <img id="loading-logo" src="favicon.png" alt="LokSetu AI Logo" />
+    <h2 style="margin: 0 0 16px 0; font-size: 26px; font-weight: 800; letter-spacing: 1px;">LokSetu AI</h2>
+    <p style="margin: 0 0 24px 0; font-size: 13px; color: #94A3B8;">Connecting Multilingual Citizens & Farmers</p>
+    <div class="spinner"></div>
+  </div>
+
   <script src="flutter_bootstrap.js" async></script>
 </body>
 </html>

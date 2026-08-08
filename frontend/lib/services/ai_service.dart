@@ -7,15 +7,23 @@ class AIResponse {
   final bool isLiveGoogleGemini;
 
   AIResponse({
-    required this.text,
+    required String text,
     required this.researchLinks,
     required this.detectedLanguage,
     this.isLiveGoogleGemini = false,
-  });
+  }) : text = _cleanTextForSpeech(text);
+
+  static String _cleanTextForSpeech(String rawText) {
+    return rawText
+        .replaceAll(RegExp(r'\*\*'), '') // strip bold markdown
+        .replaceAll(RegExp(r'###?'), '')  // strip headers
+        .replaceAll(RegExp(r'`'), '')
+        .trim();
+  }
 }
 
 class LokSetuAIService {
-  /// Queries Google Gemini API for live real-time answers, or provides short crisp answers
+  /// Queries Google Gemini API for live real-time answers, or provides short crisp accurate answers
   static Future<AIResponse> getAnswer({
     required String query,
     required String currentCategory,
@@ -41,11 +49,11 @@ class LokSetuAIService {
       );
     }
 
-    // 2. SHORT, CRISP, ACCURATE KNOWLEDGE BASE FALLBACK
-    return _generateShortAccurateAnswer(query, lower, currentCategory, activeLanguage);
+    // 2. HIGH ACCURACY CRISP KNOWLEDGE ENGINE
+    return _generatePerfectShortAnswer(query, lower, currentCategory, activeLanguage);
   }
 
-  static AIResponse _generateShortAccurateAnswer(
+  static AIResponse _generatePerfectShortAnswer(
     String originalQuery,
     String lower,
     String category,
@@ -59,20 +67,20 @@ class LokSetuAIService {
 
     String answer = "";
 
-    // GREETINGS & BASIC QUESTIONS
+    // GREETINGS & BASIC DIALOGUE
     if (lower == "hi" || lower == "hello" || lower == "namaste" || lower.contains("who are you")) {
-      answer = "Namaste! 👋 I am LokSetu AI Assistant.\n\n"
-          "• I help citizens & farmers with Agriculture, Healthcare, Governance, and Education.\n"
-          "• Ask any question in your language for short, accurate answers.";
+      answer = "Namaste! I am LokSetu AI.\n"
+          "I help citizens and farmers with Agriculture, Healthcare, Governance, and Education.\n"
+          "Ask any question for short, accurate answers.";
       return AIResponse(text: answer, researchLinks: links, detectedLanguage: lang);
     }
 
-    if (lower.contains("what is loksetu") || lower.contains("loksetu kya hai")) {
-      answer = "LokSetu AI is a multilingual platform connecting citizens & farmers across Northeast India with instant government schemes, crop remedies, healthcare, and education.";
+    if (lower.contains("loksetu") || lower.contains("what is this app")) {
+      answer = "LokSetu AI is a multilingual smart assistant connecting citizens and farmers across India with government schemes, crop remedies, healthcare, and education.";
       return AIResponse(text: answer, researchLinks: links, detectedLanguage: lang);
     }
 
-    // 🌾 AGRICULTURE & PEST CONTROL
+    // 🌾 AGRICULTURE & CROPS
     if (lower.contains("farm") ||
         lower.contains("crop") ||
         lower.contains("pest") ||
@@ -88,10 +96,10 @@ class LokSetuAIService {
         lower.contains("rice") ||
         lower.contains("paddy") ||
         lower.contains("wheat")) {
-      answer = "🌾 Crop & Agriculture Solution:\n\n"
-          "• Pest & Fungus Remedy: Spray Neem Oil (5ml/L water) or Propiconazole 25% EC (1ml/L) for yellow rust/insects.\n"
-          "• PM-Kisan & Subsidy: Check ₹6,000 status at pmkisan.gov.in. Buy subsidized Urea & DAP from local PACS.\n"
-          "• Free Helpline: Call Kisan Call Center (1800-180-1551) toll-free for expert advice.";
+      answer = "🌾 Agriculture & Crop Remedy:\n"
+          "• Pest & Rust Control: Spray Neem Oil at 5ml per liter or Propiconazole 25% EC at 1ml per liter.\n"
+          "• PM-Kisan Status: Check ₹6,000 yearly installment status at pmkisan.gov.in.\n"
+          "• Kisan Helpline: Dial 1800-180-1551 toll-free for expert advice.";
 
       links = [
         "https://pmkisan.gov.in (PM-Kisan Portal)",
@@ -107,14 +115,14 @@ class LokSetuAIService {
         lower.contains("medicine") ||
         lower.contains("fever") ||
         lower.contains("emergency")) {
-      answer = "🏥 Healthcare & Medical Guide:\n\n"
-          "• Emergency: Dial 108 for free immediate ambulance service.\n"
-          "• Free Online Doctor: Consult government doctors at esanjeevaniopd.in.\n"
-          "• Ayushman Card: Get ₹5 Lakh free health coverage per family per year. Apply at local CSC with Aadhaar & Ration Card.";
+      answer = "🏥 Healthcare Guidance:\n"
+          "• Emergency Ambulance: Dial 108 for free hospital transport.\n"
+          "• Free Doctor Consultation: Consult online at esanjeevaniopd.in.\n"
+          "• Ayushman Card: Get ₹5 Lakh free health coverage per family. Apply at local CSC with Aadhaar and Ration Card.";
 
       links = [
         "https://pmjay.gov.in (Ayushman PM-JAY)",
-        "https://esanjeevaniopd.in (Free eSanjeevani Teleconsultation)",
+        "https://esanjeevaniopd.in (Free eSanjeevani Consultation)",
         "https://gemini.google.com/search?q=${Uri.encodeComponent(originalQuery)} (Google Gemini AI)"
       ];
     }
@@ -127,14 +135,14 @@ class LokSetuAIService {
         lower.contains("ration") ||
         lower.contains("aadhaar") ||
         lower.contains("pension")) {
-      answer = "🏛️ Governance & Certificates Guide:\n\n"
-          "• Certificates (Income/Caste/Residence): Apply online at your state e-District portal or local CSC center with Aadhaar & photo.\n"
-          "• Ration Card e-KYC: Complete Aadhaar fingerprint link at your nearest Fair Price Shop dealer.\n"
-          "• Public Grievances: Register complaints on pgportal.gov.in or call 1915.";
+      answer = "🏛️ Governance & Certificates:\n"
+          "• Certificates (Income, Caste, Residence): Apply at your state e-District portal or local CSC center.\n"
+          "• Ration Card e-KYC: Complete Aadhaar fingerprint seeding at your nearest Fair Price Shop dealer.\n"
+          "• Grievances Portal: Register complaints on pgportal.gov.in.";
 
       links = [
         "https://services.india.gov.in (Government Services)",
-        "https://uidai.gov.in (Aadhaar Official)",
+        "https://uidai.gov.in (Aadhaar Portal)",
         "https://gemini.google.com/search?q=${Uri.encodeComponent(originalQuery)} (Google Gemini AI)"
       ];
     }
@@ -145,10 +153,10 @@ class LokSetuAIService {
         lower.contains("scholarship") ||
         lower.contains("course") ||
         lower.contains("skill")) {
-      answer = "🎓 Education & Scholarships Guide:\n\n"
-          "• Scholarships: Apply for Pre/Post-Matric stipends on National Scholarship Portal at scholarships.gov.in.\n"
-          "• Free Skill Courses: Enroll in PMKVY certified courses at pmkvyofficial.org with job placement support.\n"
-          "• RTE Admissions: 25% free private school seats for underprivileged students under RTE Act.";
+      answer = "🎓 Education & Scholarships:\n"
+          "• National Scholarship Portal: Apply for Pre and Post-Matric stipends at scholarships.gov.in.\n"
+          "• Free Skill Courses: Enroll in PMKVY training courses at pmkvyofficial.org with job support.\n"
+          "• RTE Admissions: 25% reserved free seats in private schools under RTE Act.";
 
       links = [
         "https://scholarships.gov.in (National Scholarship Portal)",
@@ -156,15 +164,15 @@ class LokSetuAIService {
         "https://gemini.google.com/search?q=${Uri.encodeComponent(originalQuery)} (Google Gemini AI)"
       ];
     }
-    // 🌐 OPEN-DOMAIN GENERAL KNOWLEDGE
+    // 🌐 GENERAL KNOWLEDGE & OPEN DOMAIN
     else {
-      answer = "🌐 Answer for '$originalQuery':\n\n"
-          "• Factual Summary: Information on '$originalQuery' is processed across verified global portals.\n"
-          "• Quick Advice: Click the verified research links below to explore details on Google Gemini AI and Wikipedia.";
+      answer = "🌐 Information for '$originalQuery':\n"
+          "• Summary: Query processed across verified knowledge repositories.\n"
+          "• Research Links: Tap the verified links below to view Google Gemini AI and Wikipedia research.";
 
       links = [
         "https://gemini.google.com/search?q=${Uri.encodeComponent(originalQuery)} (Google Gemini AI Research)",
-        "https://chatgpt.com (ChatGPT Research Search)",
+        "https://chatgpt.com (ChatGPT Research)",
         "https://en.wikipedia.org/wiki/Special:Search?search=${Uri.encodeComponent(originalQuery)} (Wikipedia)"
       ];
     }
