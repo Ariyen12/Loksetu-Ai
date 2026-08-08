@@ -1,10 +1,12 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
+
 import '../constants/app_colors.dart';
 import 'healthcare_screen.dart';
 import 'education_screen.dart';
 import 'governance_screen.dart';
 import 'agriculture_screen.dart';
+import 'chat_screen.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -27,8 +29,7 @@ class HomeScreen extends StatelessWidget {
         child: SafeArea(
           child: Stack(
             children: [
-
-              // Floating Circle 1
+              // Background circle
               Positioned(
                 top: -60,
                 right: -40,
@@ -37,12 +38,12 @@ class HomeScreen extends StatelessWidget {
                   height: 180,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: Colors.blue.withOpacity(.18),
+                    color: Colors.blue.withOpacity(0.18),
                   ),
                 ),
               ),
 
-              // Floating Circle 2
+              // Background circle
               Positioned(
                 bottom: 100,
                 left: -60,
@@ -51,7 +52,7 @@ class HomeScreen extends StatelessWidget {
                   height: 150,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: Colors.cyan.withOpacity(.12),
+                    color: Colors.cyan.withOpacity(0.12),
                   ),
                 ),
               ),
@@ -59,7 +60,6 @@ class HomeScreen extends StatelessWidget {
               ListView(
                 padding: const EdgeInsets.all(24),
                 children: [
-
                   const SizedBox(height: 20),
 
                   Text(
@@ -82,6 +82,7 @@ class HomeScreen extends StatelessWidget {
 
                   const SizedBox(height: 35),
 
+                  // AI ORB
                   Center(
                     child: Container(
                       width: 120,
@@ -96,9 +97,9 @@ class HomeScreen extends StatelessWidget {
                         ),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.blue.withOpacity(.45),
+                            color: Colors.blue.withOpacity(0.45),
                             blurRadius: 35,
-                          )
+                          ),
                         ],
                       ),
                       child: const Icon(
@@ -123,33 +124,37 @@ class HomeScreen extends StatelessWidget {
 
                   const SizedBox(height: 35),
 
+                  // HEALTHCARE
                   _glassCard(
-  context,
-  Icons.local_hospital,
-  "Healthcare",
-  const HealthcareScreen(),
-),
+                    context,
+                    Icons.local_hospital,
+                    "Healthcare",
+                    const HealthcareScreen(),
+                  ),
 
-_glassCard(
-  context,
-  Icons.account_balance,
-  "Governance",
-  const GovernanceScreen(),
-),
+                  // GOVERNANCE
+                  _glassCard(
+                    context,
+                    Icons.account_balance,
+                    "Governance",
+                    const GovernanceScreen(),
+                  ),
 
-_glassCard(
-  context,
-  Icons.school,
-  "Education",
-  const EducationScreen(),
-),
+                  // EDUCATION
+                  _glassCard(
+                    context,
+                    Icons.school,
+                    "Education",
+                    const EducationScreen(),
+                  ),
 
-_glassCard(
-  context,
-  Icons.agriculture,
-  "Agriculture",
-  const AgricultureScreen(),
-),
+                  // AGRICULTURE
+                  _glassCard(
+                    context,
+                    Icons.agriculture,
+                    "Agriculture",
+                    const AgricultureScreen(),
+                  ),
 
                   const SizedBox(height: 100),
                 ],
@@ -158,71 +163,87 @@ _glassCard(
           ),
         ),
       ),
+
+      // TALK BUTTON
       floatingActionButton: FloatingActionButton.extended(
         backgroundColor: AppColors.secondary,
-        onPressed: () {},
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const ChatScreen(),
+            ),
+          );
+        },
         icon: const Icon(Icons.mic),
         label: const Text("Talk"),
       ),
     );
   }
 
+  // GLASS CARD
   Widget _glassCard(
-  BuildContext context,
-  IconData icon,
-  String title,
-  Widget screen,
-) {
-  return Padding(
-    padding: const EdgeInsets.only(bottom: 18),
-    child: GestureDetector(
-      onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => screen,
-          ),
-        );
-      },
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(22),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(
-            sigmaX: 18,
-            sigmaY: 18,
-          ),
-          child: Container(
-            padding: const EdgeInsets.all(18),
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.30),
-              borderRadius: BorderRadius.circular(22),
-              border: Border.all(
-                color: Colors.white.withOpacity(0.45),
-              ),
+    BuildContext context,
+    IconData icon,
+    String title,
+    Widget screen,
+  ) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 18),
+      child: GestureDetector(
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => screen,
             ),
-            child: Row(
-              children: [
-                Icon(
-                  icon,
-                  size: 32,
-                  color: AppColors.secondary,
+          );
+        },
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(22),
+          child: BackdropFilter(
+            filter: ImageFilter.blur(
+              sigmaX: 18,
+              sigmaY: 18,
+            ),
+            child: Container(
+              padding: const EdgeInsets.all(18),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.30),
+                borderRadius: BorderRadius.circular(22),
+                border: Border.all(
+                  color: Colors.white.withOpacity(0.45),
                 ),
-                const SizedBox(width: 18),
-                Expanded(
-                  child: Text(
-                    title,
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w600,
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    icon,
+                    size: 32,
+                    color: AppColors.secondary,
+                  ),
+
+                  const SizedBox(width: 18),
+
+                  Expanded(
+                    child: Text(
+                      title,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 18,
+                      ),
                     ),
                   ),
-                ),
-                const Icon(Icons.arrow_forward_ios_rounded),
-              ],
+
+                  const Icon(
+                    Icons.arrow_forward_ios_rounded,
+                  ),
+                ],
+              ),
             ),
           ),
         ),
       ),
-    ),
-  );
+    );
+  }
 }
