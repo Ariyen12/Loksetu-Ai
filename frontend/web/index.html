@@ -17,10 +17,10 @@
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black">
   <meta name="apple-mobile-web-app-title" content="LokSetu AI">
-  <link rel="apple-touch-icon" href="favicon.png?v=2">
+  <link rel="apple-touch-icon" href="favicon.png?v=3">
 
   <!-- Favicon -->
-  <link rel="icon" type="image/png" href="favicon.png?v=2"/>
+  <link rel="icon" type="image/png" href="favicon.png?v=3"/>
 
   <title>LokSetu AI - Citizen & Farmer Assistant</title>
 
@@ -171,6 +171,66 @@
       }
     };
 
+    // Native Web Speech Recognition Mic Bridge
+    window.LokSetuMicEngine = {
+      recognition: null,
+      isListening: false,
+      startListening: function(langCode, callback) {
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if (!SpeechRecognition) {
+          if (callback) callback("error: Speech Recognition API not supported in this browser.", false);
+          return;
+        }
+
+        if (this.isListening && this.recognition) {
+          this.recognition.stop();
+          this.isListening = false;
+          return;
+        }
+
+        try {
+          this.recognition = new SpeechRecognition();
+          this.recognition.continuous = false;
+          this.recognition.interimResults = true;
+          this.recognition.lang = langCode || 'en-IN';
+
+          this.recognition.onstart = () => {
+            this.isListening = true;
+            if (callback) callback("listening_start", false);
+          };
+
+          this.recognition.onresult = (event) => {
+            let text = '';
+            for (let i = event.resultIndex; i < event.results.length; ++i) {
+              text += event.results[i][0].transcript;
+            }
+            if (callback) callback(text, event.results[0].isFinal);
+          };
+
+          this.recognition.onerror = (event) => {
+            this.isListening = false;
+            if (callback) callback("error: " + event.error, false);
+          };
+
+          this.recognition.onend = () => {
+            this.isListening = false;
+            if (callback) callback("listening_end", false);
+          };
+
+          this.recognition.start();
+        } catch (e) {
+          this.isListening = false;
+          if (callback) callback("error: " + e, false);
+        }
+      },
+      stopListening: function() {
+        if (this.recognition && this.isListening) {
+          this.recognition.stop();
+          this.isListening = false;
+        }
+      }
+    };
+
     window.LokSetuVoiceEngine.init();
 
     // Remove loading container once Flutter boots
@@ -186,12 +246,12 @@
 <body>
   <!-- LOADING SCREEN WITH OFFICIAL LOKSETU LOGO -->
   <div id="loading-container">
-    <img id="loading-logo" src="favicon.png?v=2" alt="LokSetu AI Logo" />
+    <img id="loading-logo" src="favicon.png?v=3" alt="LokSetu AI Logo" />
     <h2 style="margin: 0 0 16px 0; font-size: 26px; font-weight: 800; letter-spacing: 1px;">LokSetu AI</h2>
     <p style="margin: 0 0 24px 0; font-size: 13px; color: #94A3B8;">Connecting Multilingual Citizens & Farmers</p>
     <div class="spinner"></div>
   </div>
 
-  <script src="flutter_bootstrap.js?v=20260809_2" async></script>
+  <script src="flutter_bootstrap.js?v=20260809_3" async></script>
 </body>
 </html>

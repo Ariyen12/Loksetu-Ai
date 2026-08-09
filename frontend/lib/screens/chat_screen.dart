@@ -1,5 +1,5 @@
+import 'dart:js' as js;
 import 'package:flutter/material.dart';
-import 'package:speech_to_text/speech_to_text.dart' as stt;
 import '../services/gemini_voice_engine.dart';
 import '../services/language_detector.dart';
 import '../services/ai_service.dart';
@@ -19,14 +19,12 @@ class _ChatScreenState extends State<ChatScreen>
   final TextEditingController _apiKeyController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
 
-  final stt.SpeechToText _speech = stt.SpeechToText();
   final GeminiVoiceEngine _speechEngine = GeminiVoiceEngine();
 
   late AnimationController _micPulseController;
   late Animation<double> _micPulseAnimation;
 
   bool _isListening = false;
-  bool _speechAvailable = false;
   String? _currentlySpeakingId;
 
   String _selectedLanguage = "Assamese (অসমীয়া)";
@@ -54,37 +52,6 @@ class _ChatScreenState extends State<ChatScreen>
     _micPulseAnimation = Tween<double>(begin: 1.0, end: 1.25).animate(
       CurvedAnimation(parent: _micPulseController, curve: Curves.easeInOut),
     );
-
-    _initializeSpeech();
-  }
-
-  Future<void> _initializeSpeech() async {
-    try {
-      _speechAvailable = await _speech.initialize(
-        onStatus: (status) {
-          if (status == "done" || status == "notListening") {
-            if (mounted) {
-              setState(() {
-                _isListening = false;
-              });
-            }
-          }
-        },
-        onError: (error) {
-          if (mounted) {
-            setState(() {
-              _isListening = false;
-            });
-          }
-        },
-      );
-    } catch (_) {
-      _speechAvailable = false;
-    }
-
-    if (mounted) {
-      setState(() {});
-    }
   }
 
   void _showGeminiApiKeyDialog() {
@@ -137,14 +104,11 @@ class _ChatScreenState extends State<ChatScreen>
     );
   }
 
-  Future<void> _startListening() async {
-    if (!_speechAvailable) {
-      _showMessage("Microphone unavailable. Check browser permissions.");
-      return;
-    }
-
+  void _toggleMic() {
     if (_isListening) {
-      await _speech.stop();
+      try {
+        js.context['LokSetuMicEngine'].callMethod('stopListening');
+      } catch (_) {}
       setState(() {
         _isListening = false;
       });
@@ -157,33 +121,49 @@ class _ChatScreenState extends State<ChatScreen>
       _isListening = true;
     });
 
-    await _speech.listen(
-      localeId: localeId,
-      onResult: (result) {
-        if (!mounted) return;
+    try {
+      js.context['LokSetuMicEngine'].callMethod('startListening', [
+        localeId,
+        js.allowInterop((result, isFinal) {
+          if (!mounted) return;
+          final strResult = result.toString();
 
-        final recognized = result.recognizedWords;
-        setState(() {
-          _controller.text = recognized;
-          _controller.selection = TextSelection.fromPosition(
-            TextPosition(offset: _controller.text.length),
-          );
-        });
-
-        if (recognized.isNotEmpty) {
-          final detected = LanguageDetector.detect(recognized);
-          if (detected.languageName != _selectedLanguage) {
+          if (strResult == "listening_start") {
             setState(() {
-              _selectedLanguage = detected.languageName;
+              _isListening = true;
             });
-          }
-        }
+          } else if (strResult == "listening_end") {
+            setState(() {
+              _isListening = false;
+            });
+          } else if (strResult.startsWith("error:")) {
+            setState(() {
+              _isListening = false;
+            });
+            _showMessage("Mic permission denied or error.");
+          } else {
+            setState(() {
+              _controller.text = strResult;
+              _controller.selection = TextSelection.fromPosition(
+                TextPosition(offset: _controller.text.length),
+              );
+            });
 
-        if (result.finalResult) {
-          _sendMessage();
-        }
-      },
-    );
+            if (isFinal == true && strResult.trim().isNotEmpty) {
+              setState(() {
+                _isListening = false;
+              });
+              _sendMessage();
+            }
+          }
+        })
+      ]);
+    } catch (_) {
+      setState(() {
+        _isListening = false;
+      });
+      _showMessage("Web mic not supported or blocked.");
+    }
   }
 
   Future<void> _sendMessage() async {
@@ -201,7 +181,7 @@ class _ChatScreenState extends State<ChatScreen>
     });
 
     _scrollToBottom();
-    await Future.delayed(const Duration(milliseconds: 250));
+    await Future.delayed(const Duration(milliseconds: 200));
     if (!mounted) return;
 
     final aiResult = await LokSetuAIService.getAnswer(
@@ -475,7 +455,7 @@ class _ChatScreenState extends State<ChatScreen>
                         mini: true,
                         backgroundColor:
                             _isListening ? Colors.red : Colors.blue,
-                        onPressed: _startListening,
+                        onPressed: _toggleMic,
                         tooltip: "Listen Mic",
                         child: Icon(_isListening ? Icons.graphic_eq : Icons.mic),
                       ),
@@ -526,7 +506,6 @@ class _ChatScreenState extends State<ChatScreen>
     _apiKeyController.dispose();
     _scrollController.dispose();
     _micPulseController.dispose();
-    _speech.stop();
     _speechEngine.stop();
     super.dispose();
   }
