@@ -35,9 +35,10 @@ class OpenAISearchService {
       );
     }
 
-    // 2. LIVE WIKIPEDIA & KNOWLEDGE GRAPH REAL-TIME API SEARCH
+    // 2. LIVE WIKIPEDIA REAL-TIME API SEARCH
     try {
-      final wikiResult = await _fetchWikipediaSummary(trimmed, language);
+      final cleanQuery = trimmed.replaceAll(RegExp(r'[\?\!\.\,\;\:]'), '');
+      final wikiResult = await _fetchWikipediaSummary(cleanQuery, language);
       if (wikiResult != null && wikiResult.isNotEmpty) {
         return OpenAISearchResponse(
           text: wikiResult,
@@ -57,8 +58,20 @@ class OpenAISearchService {
       }
     } catch (_) {}
 
+    // 4. INTELLIGENT HELPFUL FALLBACK (NO TEMPLATE INTRO TEXT)
+    String fallback = "";
+    if (language.contains("Hindi") || language.contains("हिंदी")) {
+      fallback = "Main aapki madad ke liye hamesha tayaar hoon! Kripya kisi bhi kheti, swasthya, yojana, ya shiksha ke sawal ko bolein ya likhein. 🙏✨";
+    } else if (language.contains("Assamese") || language.contains("অসমীয়া")) {
+      fallback = "Moy aponar rogaayor babe prosto asu! Kheti, sasthyo aru sarkari aasonir sawal hudhibo pare. 🙏✨";
+    } else if (language.contains("Bengali") || language.contains("বাংলা")) {
+      fallback = "Ami apnar sahajyer jonyo prostut achhi! Krishi, swasthya o sarkari prakalpa niye prashno korte paren. 🙏✨";
+    } else {
+      fallback = "I am ready to help you! Please feel free to ask any question about farming, health, government schemes, or education. 🙏✨";
+    }
+
     return OpenAISearchResponse(
-      text: "Information for '$trimmed': Ask any specific question in $language for direct guidance.",
+      text: fallback,
       source: "LokSetu AI Engine",
     );
   }
