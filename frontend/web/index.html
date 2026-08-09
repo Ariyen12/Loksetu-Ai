@@ -8,8 +8,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <meta name="description" content="LokSetu AI - Multilingual Citizen & Farmer Platform">
 
-  <!-- Aggressive Cache Control (Force Browser to Load Latest Build) -->
-  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate, max-age=0" />
+  <!-- Aggressive Anti-Cache Headers (Force Browser to Fetch Fresh Code Every Visit) -->
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate, max-age=0, post-check=0, pre-check=0" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
 
@@ -17,10 +17,10 @@
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black">
   <meta name="apple-mobile-web-app-title" content="LokSetu AI">
-  <link rel="apple-touch-icon" href="favicon.png?v=3">
+  <link rel="apple-touch-icon" href="favicon.png?v=999">
 
   <!-- Favicon -->
-  <link rel="icon" type="image/png" href="favicon.png?v=3"/>
+  <link rel="icon" type="image/png" href="favicon.png?v=999"/>
 
   <title>LokSetu AI - Citizen & Farmer Assistant</title>
 
@@ -80,7 +80,7 @@
   </style>
 
   <script>
-    // Force unregister ALL service workers & clear caches
+    // Force immediate unregister of all Service Workers and Caches
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.getRegistrations().then(function(registrations) {
         for(let registration of registrations) {
@@ -246,12 +246,18 @@
 <body>
   <!-- LOADING SCREEN WITH OFFICIAL LOKSETU LOGO -->
   <div id="loading-container">
-    <img id="loading-logo" src="favicon.png?v=3" alt="LokSetu AI Logo" />
+    <img id="loading-logo" src="favicon.png?v=999" alt="LokSetu AI Logo" />
     <h2 style="margin: 0 0 16px 0; font-size: 26px; font-weight: 800; letter-spacing: 1px;">LokSetu AI</h2>
     <p style="margin: 0 0 24px 0; font-size: 13px; color: #94A3B8;">Connecting Multilingual Citizens & Farmers</p>
     <div class="spinner"></div>
   </div>
 
-  <script src="flutter_bootstrap.js?v=20260809_3" async></script>
+  <!-- DYNAMIC TIMESTAMP CACHE BUSTER FOR FLUTTER BOOTSTRAP -->
+  <script>
+    const script = document.createElement('script');
+    script.src = "flutter_bootstrap.js?t=" + Date.now();
+    script.async = true;
+    document.body.appendChild(script);
+  </script>
 </body>
 </html>
