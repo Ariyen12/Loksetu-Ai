@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base href="/Loksetu-Ai/">
+
+  <meta charset="UTF-8">
+  <meta content="IE=Edge" http-equiv="X-UA-Compatible">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="description" content="LokSetu AI - Multilingual Citizen & Farmer Platform">
+
+  <!-- Aggressive Anti-Cache Headers (Force Browser to Fetch Fresh Code Every Visit) -->
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate, max-age=0, post-check=0, pre-check=0" />
+  <meta http-equiv="Pragma" content="no-cache" />
+  <meta http-equiv="Expires" content="0" />
+
+  <!-- iOS meta tags & icons -->
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <meta name="apple-mobile-web-app-title" content="LokSetu AI">
+  <link rel="apple-touch-icon" href="favicon.png?v=999">
+
+  <!-- Favicon -->
+  <link rel="icon" type="image/png" href="favicon.png?v=999"/>
+
+  <title>LokSetu AI - Citizen & Farmer Assistant</title>
+
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      background-color: #0F172A;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    }
+
+    #loading-container {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(135deg, #0F172A 0%, #1E3A8A 100%);
+      color: white;
+      z-index: 99999;
+      transition: opacity 0.4s ease;
+    }
+
+    #loading-logo {
+      width: 130px;
+      height: 130px;
+      border-radius: 50%;
+      box-shadow: 0 0 35px rgba(249, 115, 22, 0.5), 0 0 25px rgba(34, 197, 94, 0.4);
+      background: white;
+      padding: 8px;
+      margin-bottom: 24px;
+      animation: pulseLogo 2s infinite ease-in-out;
+    }
+
+    @keyframes pulseLogo {
+      0% { transform: scale(0.96); }
+      50% { transform: scale(1.04); }
+      100% { transform: scale(0.96); }
+    }
+
+    .spinner {
+      width: 36px;
+      height: 36px;
+      border: 4px solid rgba(255, 255, 255, 0.2);
+      border-top-color: #3B82F6;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+  </style>
+
+  <script>
+    // Force immediate unregister of all Service Workers and Caches
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.getRegistrations().then(function(registrations) {
+        for(let registration of registrations) {
+          registration.unregister();
+        }
+      });
+    }
+    if ('caches' in window) {
+      caches.keys().then(function(names) {
+        for (let name of names) caches.delete(name);
+      });
+    }
+
+    // High Quality Natural Voice Engine
+    window.LokSetuVoiceEngine = {
+      voices: [],
+      isSpeaking: false,
+
+      init: function() {
+        if ('speechSynthesis' in window) {
+          const loadVoices = () => {
+            this.voices = window.speechSynthesis.getVoices();
+          };
+          loadVoices();
+          if (window.speechSynthesis.onvoiceschanged !== undefined) {
+            window.speechSynthesis.onvoiceschanged = loadVoices;
+          }
+        }
+      },
+
+      speakText: function(text, langCode) {
+        if (!('speechSynthesis' in window)) return;
+        window.speechSynthesis.cancel();
+        this.isSpeaking = true;
+
+        // 1. Clean Emojis & Symbols
+        let cleaned = text.replace(/[\u{1F300}-\u{1F9FF}]|[\u{1F600}-\u{1F64F}]|[\u{1F680}-\u{1F6FF}]|[\u{2600}-\u{26FF}]|[\u{2700}-\u{27BF}]|[\u{1F900}-\u{1F9FF}]|[\u{1F1E6}-\u{1F1FF}]/gu, '');
+        
+        // 2. Replace bullet points & currency gently
+        cleaned = cleaned.replace(/₹/g, ' rupees ');
+        cleaned = cleaned.replace(/1\. /g, ' ');
+        cleaned = cleaned.replace(/2\. /g, ' ');
+        cleaned = cleaned.replace(/3\. /g, ' ');
+
+        // 3. REMOVE ALL PUNCTUATION MARKS SO TTS NEVER READS "DOT" OR "PERIOD"
+        cleaned = cleaned.replace(/[\.\,\:\;\-\*\#\_\~`\[\]\(\)\?\!\"\'\/\\]/g, ' ');
+        cleaned = cleaned.replace(/\s+/g, ' ').trim();
+
+        if (!cleaned) return;
+
+        const utterance = new SpeechSynthesisUtterance(cleaned);
+        let targetLang = langCode || 'hi-IN';
+
+        if (!this.voices || this.voices.length === 0) {
+          this.voices = window.speechSynthesis.getVoices();
+        }
+
+        let langPrefix = targetLang.split('-')[0];
+        
+        // Select Neural / Natural / Premium Google Voice
+        let bestVoice = this.voices.find(v => 
+          v.lang.startsWith(langPrefix) && 
+          (v.name.includes('Natural') || v.name.includes('Neural') || v.name.includes('Google') || v.name.includes('Online') || v.name.includes('Premium'))
+        );
+
+        if (!bestVoice) {
+          bestVoice = this.voices.find(v => v.lang.startsWith(langPrefix));
+        }
+
+        if (bestVoice) {
+          utterance.voice = bestVoice;
+        }
+
+        utterance.rate = 0.90; // Natural, gentle human speed
+        utterance.pitch = 1.0;  // Sweet, realistic pitch
+
+        utterance.onend = () => { this.isSpeaking = false; };
+        utterance.onerror = () => { this.isSpeaking = false; };
+
+        window.speechSynthesis.speak(utterance);
+      },
+
+      stopSpeech: function() {
+        this.isSpeaking = false;
+        if ('speechSynthesis' in window) {
+          window.speechSynthesis.cancel();
+        }
+      }
+    };
+
+    // Native Web Speech Recognition Mic Bridge
+    window.LokSetuMicEngine = {
+      recognition: null,
+      isListening: false,
+      startListening: function(langCode, callback) {
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if (!SpeechRecognition) {
+          if (callback) callback("error: Speech Recognition API not supported in this browser.", false);
+          return;
+        }
+
+        if (this.isListening && this.recognition) {
+          this.recognition.stop();
+          this.isListening = false;
+          return;
+        }
+
+        try {
+          this.recognition = new SpeechRecognition();
+          this.recognition.continuous = false;
+          this.recognition.interimResults = true;
+          this.recognition.lang = langCode || 'en-IN';
+
+          this.recognition.onstart = () => {
+            this.isListening = true;
+            if (callback) callback("listening_start", false);
+          };
+
+          this.recognition.onresult = (event) => {
+            let text = '';
+            for (let i = event.resultIndex; i < event.results.length; ++i) {
+              text += event.results[i][0].transcript;
+            }
+            if (callback) callback(text, event.results[0].isFinal);
+          };
+
+          this.recognition.onerror = (event) => {
+            this.isListening = false;
+            if (callback) callback("error: " + event.error, false);
+          };
+
+          this.recognition.onend = () => {
+            this.isListening = false;
+            if (callback) callback("listening_end", false);
+          };
+
+          this.recognition.start();
+        } catch (e) {
+          this.isListening = false;
+          if (callback) callback("error: " + e, false);
+        }
+      },
+      stopListening: function() {
+        if (this.recognition && this.isListening) {
+          this.recognition.stop();
+          this.isListening = false;
+        }
+      }
+    };
+
+    window.LokSetuVoiceEngine.init();
+
+    // Remove loading container once Flutter boots
+    window.addEventListener('flutter-first-frame', function () {
+      const el = document.getElementById('loading-container');
+      if (el) {
+        el.style.opacity = '0';
+        setTimeout(() => el.remove(), 400);
+      }
+    });
+  </script>
+</head>
+<body>
+  <!-- LOADING SCREEN WITH OFFICIAL LOKSETU LOGO -->
+  <div id="loading-container">
+    <img id="loading-logo" src="favicon.png?v=999" alt="LokSetu AI Logo" />
+    <h2 style="margin: 0 0 16px 0; font-size: 26px; font-weight: 800; letter-spacing: 1px;">LokSetu AI</h2>
+    <p style="margin: 0 0 24px 0; font-size: 13px; color: #94A3B8;">Connecting Multilingual Citizens & Farmers</p>
+    <div class="spinner"></div>
+  </div>
+
+  <!-- DYNAMIC TIMESTAMP CACHE BUSTER FOR FLUTTER BOOTSTRAP -->
+  <script>
+    const script = document.createElement('script');
+    script.src = "flutter_bootstrap.js?t=" + Date.now();
+    script.async = true;
+    document.body.appendChild(script);
+  </script>
+</body>
+</html>
