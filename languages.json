@@ -1,0 +1,230 @@
+[
+    {
+        "name": "Assamese",
+        "region": "Assam",
+        "script": "Assamese",
+        "phrases": [
+            {
+                "english": "Hello",
+                "translation": "নমস্কাৰ"
+            },
+            {
+                "english": "Thank you",
+                "translation": "ধন্যবাদ"
+            },
+            {
+                "english": "How are you?",
+                "translation": "আপুনি কেনে আছে?"
+            }
+        ]
+    },
+    {
+        "name": "Manipuri",
+        "region": "Manipur",
+        "script": "Meitei Mayek / Bengali",
+        "phrases": [
+            {
+                "english": "Hello",
+                "translation": "ꯍꯥꯏꯔꯤ"
+            },
+            {
+                "english": "Thank you",
+                "translation": "ꯊꯥꯒꯠꯆꯔꯤ"
+            },
+            {
+                "english": "How are you?",
+                "translation": "ꯑꯗꯣꯝ ꯀꯔꯝ ꯅꯥꯕ?"
+            }
+        ]
+    },
+    {
+        "name": "Bengali",
+        "region": "Tripura / Assam / West Bengal",
+        "script": "Bengali",
+        "phrases": [
+            {
+                "english": "Hello",
+                "translation": "নমস্কার"
+            },
+            {
+                "english": "Thank you",
+                "translation": "ধন্যবাদ"
+            },
+            {
+                "english": "How are you?",
+                "translation": "আপনি কেমন আছেন?"
+            }
+        ]
+    },
+    {
+        "name": "Bodo",
+        "region": "Assam",
+        "script": "Devanagari",
+        "phrases": [
+            {
+                "english": "Hello",
+                "translation": "नमस्कार"
+            },
+            {
+                "english": "Thank you",
+                "translation": "साबायखौ"
+            },
+            {
+                "english": "How are you?",
+                "translation": "नों माबोरै दं?"
+            }
+        ]
+    },
+    {
+        "name": "Nepali",
+        "region": "Sikkim / Northeast India",
+        "script": "Devanagari",
+        "phrases": [
+            {
+                "english": "Hello",
+                "translation": "नमस्ते"
+            },
+            {
+                "english": "Thank you",
+                "translation": "धन्यवाद"
+            },
+            {
+                "english": "How are you?",
+                "translation": "तपाईंलाई कस्तो छ?"
+            }
+        ]
+    },
+    {
+        "name": "Hindi",
+        "region": "India",
+        "script": "Devanagari",
+        "phrases": [
+            {
+                "english": "Hello",
+                "translation": "नमस्ते"
+            },
+            {
+                "english": "Thank you",
+                "translation": "धन्यवाद"
+            },
+            {
+                "english": "How are you?",
+                "translation": "आप कैसे हैं?"
+            }
+        ]
+    },
+    {
+        "name": "English",
+        "region": "India / Worldwide",
+        "script": "Latin",
+        "phrases": [
+            {
+                "english": "Hello",
+                "translation": "Hello"
+            },
+            {
+                "english": "Thank you",
+                "translation": "Thank you"
+            },
+            {
+                "english": "How are you?",
+                "translation": "How are you?"
+            }
+        ]
+    },
+    {
+        "name": "Khasi",
+        "region": "Meghalaya",
+        "script": "Latin",
+        "phrases": [
+            {
+                "english": "Hello",
+                "translation": "Kumno"
+            },
+            {
+                "english": "Thank you",
+                "translation": "Khublei"
+            },
+            {
+                "english": "How are you?",
+                "translation": "Kumno phi long?"
+            }
+        ]
+    },
+    {
+        "name": "Garo",
+        "region": "Meghalaya",
+        "script": "Latin",
+        "phrases": [
+            {
+                "english": "Hello",
+                "translation": "Namaste"
+            },
+            {
+                "english": "Thank you",
+                "translation": "Mitela"
+            },
+            {
+                "english": "How are you?",
+                "translation": "Nangni maikai?"
+            }
+        ]
+    },
+    {
+        "name": "Mizo",
+        "region": "Mizoram",
+        "script": "Latin",
+        "phrases": [
+            {
+                "english": "Hello",
+                "translation": "Chibai"
+            },
+            {
+                "english": "Thank you",
+                "translation": "Ka lawm e"
+            },
+            {
+                "english": "How are you?",
+                "translation": "I dam em?"
+            }
+        ]
+    },
+    {
+        "name": "Nagamese",
+        "region": "Nagaland / Northeast India",
+        "script": "Latin",
+        "phrases": [
+            {
+                "english": "Hello",
+                "translation": "Nomoskar"
+            },
+            {
+                "english": "Thank you",
+                "translation": "Dhonyobad"
+            },
+            {
+                "english": "How are you?",
+                "translation": "Apuni keneka ase?"
+            }
+        ]
+    },
+    {
+        "name": "Kokborok",
+        "region": "Tripura",
+        "script": "Bengali script / Roman",
+        "phrases": [
+            {
+                "english": "Hello",
+                "translation": "Khulumkha"
+            },
+            {
+                "english": "Thank you",
+                "translation": "Khamchak"
+            },
+            {
+                "english": "How are you?",
+                "translation": "Nwng bahai tong?"
+            }
+        ]
+    }
+]
