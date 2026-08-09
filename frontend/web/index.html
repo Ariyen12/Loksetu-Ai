@@ -8,7 +8,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <meta name="description" content="LokSetu AI - Multilingual Citizen & Farmer Platform">
 
-  <!-- Aggressive Anti-Cache Headers (Force Browser to Fetch Fresh Code Every Visit) -->
+  <!-- Aggressive Anti-Cache Headers -->
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate, max-age=0, post-check=0, pre-check=0" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
@@ -17,10 +17,10 @@
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black">
   <meta name="apple-mobile-web-app-title" content="LokSetu AI">
-  <link rel="apple-touch-icon" href="favicon.png?v=999">
+  <link rel="apple-touch-icon" href="favicon.png?v=9999">
 
   <!-- Favicon -->
-  <link rel="icon" type="image/png" href="favicon.png?v=999"/>
+  <link rel="icon" type="image/png" href="favicon.png?v=9999"/>
 
   <title>LokSetu AI - Citizen & Farmer Assistant</title>
 
@@ -80,7 +80,7 @@
   </style>
 
   <script>
-    // Force immediate unregister of all Service Workers and Caches
+    // Force unregister ALL service workers & clear caches
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.getRegistrations().then(function(registrations) {
         for(let registration of registrations) {
@@ -94,7 +94,7 @@
       });
     }
 
-    // High Quality Natural Voice Engine
+    // Dynamic Language Native Speaker Voice Engine
     window.LokSetuVoiceEngine = {
       voices: [],
       isSpeaking: false,
@@ -116,16 +116,12 @@
         window.speechSynthesis.cancel();
         this.isSpeaking = true;
 
-        // 1. Clean Emojis & Symbols
+        // Clean Emojis & Symbols
         let cleaned = text.replace(/[\u{1F300}-\u{1F9FF}]|[\u{1F600}-\u{1F64F}]|[\u{1F680}-\u{1F6FF}]|[\u{2600}-\u{26FF}]|[\u{2700}-\u{27BF}]|[\u{1F900}-\u{1F9FF}]|[\u{1F1E6}-\u{1F1FF}]/gu, '');
-        
-        // 2. Replace bullet points & currency gently
         cleaned = cleaned.replace(/₹/g, ' rupees ');
         cleaned = cleaned.replace(/1\. /g, ' ');
         cleaned = cleaned.replace(/2\. /g, ' ');
         cleaned = cleaned.replace(/3\. /g, ' ');
-
-        // 3. REMOVE ALL PUNCTUATION MARKS SO TTS NEVER READS "DOT" OR "PERIOD"
         cleaned = cleaned.replace(/[\.\,\:\;\-\*\#\_\~`\[\]\(\)\?\!\"\'\/\\]/g, ' ');
         cleaned = cleaned.replace(/\s+/g, ' ').trim();
 
@@ -133,6 +129,7 @@
 
         const utterance = new SpeechSynthesisUtterance(cleaned);
         let targetLang = langCode || 'hi-IN';
+        utterance.lang = targetLang; // Set explicit native locale code
 
         if (!this.voices || this.voices.length === 0) {
           this.voices = window.speechSynthesis.getVoices();
@@ -140,11 +137,23 @@
 
         let langPrefix = targetLang.split('-')[0];
         
-        // Select Neural / Natural / Premium Google Voice
+        // 1. Match exact native locale voice (e.g. bn-IN, hi-IN, as-IN, ne-NP, en-IN)
         let bestVoice = this.voices.find(v => 
-          v.lang.startsWith(langPrefix) && 
-          (v.name.includes('Natural') || v.name.includes('Neural') || v.name.includes('Google') || v.name.includes('Online') || v.name.includes('Premium'))
+          v.lang === targetLang && 
+          (v.name.includes('Natural') || v.name.includes('Neural') || v.name.includes('Google') || v.name.includes('Online'))
         );
+
+        if (!bestVoice) {
+          bestVoice = this.voices.find(v => v.lang === targetLang);
+        }
+
+        // 2. Match language prefix (e.g. 'bn' for Bengali, 'hi' for Hindi, 'as' for Assamese, 'ne' for Nepali)
+        if (!bestVoice) {
+          bestVoice = this.voices.find(v => 
+            v.lang.startsWith(langPrefix) && 
+            (v.name.includes('Natural') || v.name.includes('Neural') || v.name.includes('Google') || v.name.includes('Online'))
+          );
+        }
 
         if (!bestVoice) {
           bestVoice = this.voices.find(v => v.lang.startsWith(langPrefix));
@@ -154,8 +163,8 @@
           utterance.voice = bestVoice;
         }
 
-        utterance.rate = 0.90; // Natural, gentle human speed
-        utterance.pitch = 1.0;  // Sweet, realistic pitch
+        utterance.rate = 0.88; // Sweet native speaker speed
+        utterance.pitch = 1.0;  // Natural realistic pitch
 
         utterance.onend = () => { this.isSpeaking = false; };
         utterance.onerror = () => { this.isSpeaking = false; };
@@ -246,7 +255,7 @@
 <body>
   <!-- LOADING SCREEN WITH OFFICIAL LOKSETU LOGO -->
   <div id="loading-container">
-    <img id="loading-logo" src="favicon.png?v=999" alt="LokSetu AI Logo" />
+    <img id="loading-logo" src="favicon.png?v=9999" alt="LokSetu AI Logo" />
     <h2 style="margin: 0 0 16px 0; font-size: 26px; font-weight: 800; letter-spacing: 1px;">LokSetu AI</h2>
     <p style="margin: 0 0 24px 0; font-size: 13px; color: #94A3B8;">Connecting Multilingual Citizens & Farmers</p>
     <div class="spinner"></div>
