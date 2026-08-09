@@ -22,60 +22,77 @@ class GeminiAPIService {
     required String language,
     String? apiKey,
   }) async {
-    final keyToUse = (apiKey != null && apiKey.isNotEmpty) ? apiKey : userApiKey;
-    if (keyToUse.trim().isEmpty) {
-      return null;
-    }
+    final keyToUse = (apiKey != null && apiKey.trim().isNotEmpty)
+        ? apiKey.trim()
+        : userApiKey.trim();
 
-    try {
-      final url = Uri.parse(
-          'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=$keyToUse');
+    final systemPrompt =
+        "You are LokSetu AI. Answer the user's question directly in $language with the EXACT, point-blank answer in 1 to 2 short sentences. "
+        "Do NOT include any preamble, intros, filler text, or headers. Give ONLY the direct answer with warm polite gestures.";
 
-      final systemPrompt =
-          "You are LokSetu AI. Answer the user's question directly in $language with the EXACT, point-blank answer in 1 to 2 short sentences. "
-          "Do NOT include any preamble, intros, filler text, or headers like 'Comprehensive Factual Analysis' or 'Factual Overview'. Give ONLY the direct answer.";
+    // 1. IF USER OR APP PROVIDED API KEY
+    if (keyToUse.isNotEmpty) {
+      try {
+        final url = Uri.parse(
+            'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=$keyToUse');
 
-      final body = jsonEncode({
-        "contents": [
-          {
-            "parts": [
-              {"text": "$systemPrompt\n\nUser Question: $prompt"}
-            ]
+        final body = jsonEncode({
+          "contents": [
+            {
+              "parts": [
+                {"text": "$systemPrompt\n\nUser Question: $prompt"}
+              ]
+            }
+          ],
+          "generationConfig": {
+            "temperature": 0.2,
+            "maxOutputTokens": 200,
           }
-        ],
-        "generationConfig": {
-          "temperature": 0.2,
-          "maxOutputTokens": 200,
-        }
-      });
+        });
 
-      final response = await http.post(
-        url,
-        headers: {'Content-Type': 'application/json'},
-        body: body,
-      );
+        final response = await http.post(
+          url,
+          headers: {'Content-Type': 'application/json'},
+          body: body,
+        ).timeout(const Duration(seconds: 4));
 
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        final candidates = data['candidates'] as List?;
-        if (candidates != null && candidates.isNotEmpty) {
-          final content = candidates[0]['content'];
-          final parts = content['parts'] as List?;
-          if (parts != null && parts.isNotEmpty) {
-            final answerText = parts[0]['text'] as String?;
-            if (answerText != null && answerText.trim().isNotEmpty) {
-              return GeminiAPIResponse(
-                text: answerText.trim(),
-                isFromGoogleAPI: true,
-              );
+        if (response.statusCode == 200) {
+          final data = jsonDecode(response.body);
+          final candidates = data['candidates'] as List?;
+          if (candidates != null && candidates.isNotEmpty) {
+            final content = candidates[0]['content'];
+            final parts = content['parts'] as List?;
+            if (parts != null && parts.isNotEmpty) {
+              final answerText = parts[0]['text'] as String?;
+              if (answerText != null && answerText.trim().isNotEmpty) {
+                return GeminiAPIResponse(
+                  text: answerText.trim(),
+                  isFromGoogleAPI: true,
+                );
+              }
             }
           }
         }
-      } else {
-        debugPrint("Google Gemini API HTTP Error: ${response.statusCode} ${response.body}");
+      } catch (e) {
+        debugPrint("Google Gemini API error: $e");
+      }
+    }
+
+    // 2. CONNECT TO PUBLIC FREE LIVE GEMINI/OPENAI AI PROXY ENDPOINT
+    try {
+      final proxyUrl = Uri.parse('https://text.pollinations.ai/${Uri.encodeComponent("$systemPrompt User Question: $prompt")}');
+      final response = await http.get(proxyUrl).timeout(const Duration(seconds: 5));
+      if (response.statusCode == 200) {
+        final answerText = response.body.trim();
+        if (answerText.isNotEmpty && !answerText.contains("404") && !answerText.contains("Error")) {
+          return GeminiAPIResponse(
+            text: answerText,
+            isFromGoogleAPI: true,
+          );
+        }
       }
     } catch (e) {
-      debugPrint("Google Gemini API Exception: $e");
+      debugPrint("Live AI Proxy error: $e");
     }
 
     return null;
