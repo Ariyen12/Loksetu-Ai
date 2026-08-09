@@ -17,10 +17,10 @@
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black">
   <meta name="apple-mobile-web-app-title" content="LokSetu AI">
-  <link rel="apple-touch-icon" href="favicon.png?v=9999">
+  <link rel="apple-touch-icon" href="favicon.png?v=99999">
 
   <!-- Favicon -->
-  <link rel="icon" type="image/png" href="favicon.png?v=9999"/>
+  <link rel="icon" type="image/png" href="favicon.png?v=99999"/>
 
   <title>LokSetu AI - Citizen & Farmer Assistant</title>
 
@@ -80,7 +80,7 @@
   </style>
 
   <script>
-    // Force unregister ALL service workers & clear caches
+    // Force immediate unregister of all Service Workers and Caches
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.getRegistrations().then(function(registrations) {
         for(let registration of registrations) {
@@ -116,7 +116,6 @@
         window.speechSynthesis.cancel();
         this.isSpeaking = true;
 
-        // Clean Emojis & Symbols
         let cleaned = text.replace(/[\u{1F300}-\u{1F9FF}]|[\u{1F600}-\u{1F64F}]|[\u{1F680}-\u{1F6FF}]|[\u{2600}-\u{26FF}]|[\u{2700}-\u{27BF}]|[\u{1F900}-\u{1F9FF}]|[\u{1F1E6}-\u{1F1FF}]/gu, '');
         cleaned = cleaned.replace(/₹/g, ' rupees ');
         cleaned = cleaned.replace(/1\. /g, ' ');
@@ -129,7 +128,7 @@
 
         const utterance = new SpeechSynthesisUtterance(cleaned);
         let targetLang = langCode || 'hi-IN';
-        utterance.lang = targetLang; // Set explicit native locale code
+        utterance.lang = targetLang;
 
         if (!this.voices || this.voices.length === 0) {
           this.voices = window.speechSynthesis.getVoices();
@@ -137,7 +136,6 @@
 
         let langPrefix = targetLang.split('-')[0];
         
-        // 1. Match exact native locale voice (e.g. bn-IN, hi-IN, as-IN, ne-NP, en-IN)
         let bestVoice = this.voices.find(v => 
           v.lang === targetLang && 
           (v.name.includes('Natural') || v.name.includes('Neural') || v.name.includes('Google') || v.name.includes('Online'))
@@ -147,7 +145,6 @@
           bestVoice = this.voices.find(v => v.lang === targetLang);
         }
 
-        // 2. Match language prefix (e.g. 'bn' for Bengali, 'hi' for Hindi, 'as' for Assamese, 'ne' for Nepali)
         if (!bestVoice) {
           bestVoice = this.voices.find(v => 
             v.lang.startsWith(langPrefix) && 
@@ -163,8 +160,8 @@
           utterance.voice = bestVoice;
         }
 
-        utterance.rate = 0.88; // Sweet native speaker speed
-        utterance.pitch = 1.0;  // Natural realistic pitch
+        utterance.rate = 0.88;
+        utterance.pitch = 1.0;
 
         utterance.onend = () => { this.isSpeaking = false; };
         utterance.onerror = () => { this.isSpeaking = false; };
@@ -255,16 +252,16 @@
 <body>
   <!-- LOADING SCREEN WITH OFFICIAL LOKSETU LOGO -->
   <div id="loading-container">
-    <img id="loading-logo" src="favicon.png?v=9999" alt="LokSetu AI Logo" />
+    <img id="loading-logo" src="favicon.png?v=99999" alt="LokSetu AI Logo" />
     <h2 style="margin: 0 0 16px 0; font-size: 26px; font-weight: 800; letter-spacing: 1px;">LokSetu AI</h2>
     <p style="margin: 0 0 24px 0; font-size: 13px; color: #94A3B8;">Connecting Multilingual Citizens & Farmers</p>
     <div class="spinner"></div>
   </div>
 
-  <!-- DYNAMIC TIMESTAMP CACHE BUSTER FOR FLUTTER BOOTSTRAP -->
+  <!-- DYNAMIC TIMESTAMP CACHE BUSTER SCRIPT -->
   <script>
     const script = document.createElement('script');
-    script.src = "flutter_bootstrap.js?t=" + Date.now();
+    script.src = "flutter_bootstrap.js?v=" + Date.now();
     script.async = true;
     document.body.appendChild(script);
   </script>
