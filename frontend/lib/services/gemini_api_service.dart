@@ -16,7 +16,7 @@ class GeminiAPIService {
   // Configurable Google Gemini API Key
   static String userApiKey = "";
 
-  /// Queries Google Gemini API (gemini-1.5-flash) for exact point-blank answers
+  /// Queries Google Gemini API (gemini-1.5-flash) or Live Knowledge API for exact answers
   static Future<GeminiAPIResponse?> queryGoogleGeminiAPI({
     required String prompt,
     required String language,
@@ -30,7 +30,7 @@ class GeminiAPIService {
         "You are LokSetu AI. Answer the user's question directly in $language with the EXACT, point-blank answer in 1 to 2 short sentences. "
         "Do NOT include any preamble, intros, filler text, or headers. Give ONLY the direct answer with warm polite gestures.";
 
-    // 1. IF USER OR APP PROVIDED API KEY
+    // 1. IF USER OR APP PROVIDED GEMINI API KEY
     if (keyToUse.isNotEmpty) {
       try {
         final url = Uri.parse(
@@ -76,23 +76,6 @@ class GeminiAPIService {
       } catch (e) {
         debugPrint("Google Gemini API error: $e");
       }
-    }
-
-    // 2. CONNECT TO PUBLIC FREE LIVE GEMINI/OPENAI AI PROXY ENDPOINT
-    try {
-      final proxyUrl = Uri.parse('https://text.pollinations.ai/${Uri.encodeComponent("$systemPrompt User Question: $prompt")}');
-      final response = await http.get(proxyUrl).timeout(const Duration(seconds: 5));
-      if (response.statusCode == 200) {
-        final answerText = response.body.trim();
-        if (answerText.isNotEmpty && !answerText.contains("404") && !answerText.contains("Error")) {
-          return GeminiAPIResponse(
-            text: answerText,
-            isFromGoogleAPI: true,
-          );
-        }
-      }
-    } catch (e) {
-      debugPrint("Live AI Proxy error: $e");
     }
 
     return null;
