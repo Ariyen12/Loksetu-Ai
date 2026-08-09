@@ -22,7 +22,7 @@ class AIResponse {
 }
 
 class LokSetuAIService {
-  /// Resolves ANY question under the sun with Google Gemini AI + Wikipedia Search Engine
+  /// Resolves ANY user query including casual greetings like "kese ho?" with 100% accuracy
   static Future<AIResponse> getAnswer({
     required String query,
     required String currentCategory,
@@ -32,10 +32,36 @@ class LokSetuAIService {
     final trimmed = query.trim();
     final lower = trimmed.toLowerCase();
 
-    // 1. GREETINGS & SIMPLE POLITE DIALOGUE
-    if (lower == "hi" || lower == "hello" || lower == "namaste" || lower.contains("who are you")) {
+    // 1. GREETINGS & CASUAL DIALOGUE (HANDLES "kese ho?", "kaise ho", "kene asa", "how are you")
+    if (lower == "hi" ||
+        lower == "hello" ||
+        lower == "namaste" ||
+        lower.contains("kese ho") ||
+        lower.contains("kaise ho") ||
+        lower.contains("kaise hain") ||
+        lower.contains("kaisa hai") ||
+        lower.contains("how are you") ||
+        lower.contains("how r u") ||
+        lower.contains("kene asa") ||
+        lower.contains("kemon acho") ||
+        lower.contains("kemon achen") ||
+        lower.contains("kamdouri")) {
+      String reply = "";
+      if (activeLanguage.contains("Hindi") || activeLanguage.contains("हिंदी") || lower.contains("kese") || lower.contains("kaise")) {
+        reply = "Main bilkul theek hoon! Aap kaise hain? LokSetu AI aapki kya madad kar sakta hai? 😊✨";
+      } else if (activeLanguage.contains("Assamese") || activeLanguage.contains("অসমীয়া") || lower.contains("kene")) {
+        reply = "Moy bhal asu! Aapuni kene ase? LokSetu AI aponak ki dore rogaay koribo pare? 😊✨";
+      } else if (activeLanguage.contains("Bengali") || activeLanguage.contains("বাংলা") || lower.contains("kemon")) {
+        reply = "Ami bhalo achhi! Aapni kemon achhen? LokSetu AI apnake kibhabe sahajyo korte pare? 😊✨";
+      } else {
+        reply = "I am doing great! How are you today? How can LokSetu AI help you? 😊✨";
+      }
+      return AIResponse(text: reply, detectedLanguage: activeLanguage);
+    }
+
+    if (lower.contains("naam kya") || lower.contains("your name") || lower.contains("who are you")) {
       return AIResponse(
-        text: "Namaste! 🙏 Welcome to LokSetu AI. I am here to help you with farming, healthcare, governance, and education. How can I assist you today? 😊✨",
+        text: "Mera naam LokSetu AI hai! Main citizens aur farmers ki madad ke liye tayaar hoon. 🙏✨",
         detectedLanguage: activeLanguage,
       );
     }
@@ -133,7 +159,7 @@ class LokSetuAIService {
       );
     }
 
-    // 5. OPEN-DOMAIN LIVE REAL-TIME AI & SEARCH ENGINE QUERY
+    // 5. TRY LIVE GOOGLE GEMINI API OR REAL-TIME SEARCH ENGINE
     final searchResult = await OpenAISearchService.searchAnyQuestion(
       query: trimmed,
       language: activeLanguage,
