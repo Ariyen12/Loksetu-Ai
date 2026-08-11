@@ -1,3 +1,5 @@
+import 'dart:convert';
+import 'package:http/http.dart' as http;
 import 'open_ai_search_service.dart';
 import 'gemini_api_service.dart';
 
@@ -32,7 +34,23 @@ class LokSetuAIService {
     final trimmed = query.trim();
     final lower = trimmed.toLowerCase().replaceAll(RegExp(r'[\?\!\.\,\;\:]'), '');
 
+    // 0. LOCAL NETWORK BACKEND SERVER QUERY (CONNECTS TO http://127.0.0.1:8000)
+    try {
+      final backendUrl = Uri.parse('http://127.0.0.1:8000/translate?language=${Uri.encodeComponent(activeLanguage)}&english=${Uri.encodeComponent(trimmed)}');
+      final resp = await http.get(backendUrl).timeout(const Duration(milliseconds: 1500));
+      if (resp.statusCode == 200) {
+        final data = jsonDecode(resp.body);
+        if (data['translation'] != null && data['translation'].toString().isNotEmpty) {
+          return AIResponse(
+            text: "${data['translation']} 🙏✨",
+            detectedLanguage: activeLanguage,
+          );
+        }
+      }
+    } catch (_) {}
+
     // 1. CASUAL GREETINGS & SMALL TALK MATCHING
+
     if (lower == "hi" ||
         lower == "hello" ||
         lower == "namaste" ||
