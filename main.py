@@ -163,14 +163,22 @@ def ask_question(
 
     # 3. Contextual Universal Multilingual Engine
     lower = trimmed.lower()
-    if "crop" in lower or "kheti" in lower or "fasal" in lower or "pest" in lower:
+    if "sky" in lower or "aasmaan" in lower or "akax" in lower:
+        ans = "The sky appears blue because of Rayleigh scattering. Earth's atmosphere scatters shorter blue light wavelengths from the Sun more than longer red light wavelengths. 🙏✨"
+    elif "rain" in lower or "baarish" in lower or "cloud" in lower:
+        ans = "Rain occurs when water vapor in clouds condenses into heavier water droplets that fall due to gravity. 🌧️🙏"
+    elif "sun" in lower or "suraj" in lower:
+        ans = "The Sun is a yellow dwarf star at the center of our solar system that provides light and heat to Earth. ☀️✨"
+    elif "moon" in lower or "chand" in lower:
+        ans = "The Moon is Earth's natural satellite that orbits Earth every 27.3 days. 🌙✨"
+    elif "crop" in lower or "kheti" in lower or "fasal" in lower or "pest" in lower:
         ans = f"Regarding '{trimmed}': For best crop yield and pest protection, spray Neem Oil (5ml/L) or consult Krishi Vigyan Kendra. Call Kisan Helpline at 1800-180-1551. 🌾🙏"
     elif "health" in lower or "doctor" in lower or "bimar" in lower or "fever" in lower:
         ans = f"Regarding healthcare for '{trimmed}': Consult doctors online for free via eSanjeevani (esanjeevaniopd.in). For emergencies dial 108. 🏥🌸"
     elif "scheme" in lower or "yojana" in lower or "pm" in lower:
         ans = f"Regarding government welfare for '{trimmed}': Top schemes include Ayushman Bharat (₹5 Lakh health cover) and PM-Kisan (₹6,000/year). Apply at your local CSC. 📜✨"
     else:
-        ans = f"LokSetu AI is ready to help with '{trimmed}' in {language}! Feel free to ask any question on farming, health, education, or government schemes. 🙏✨"
+        ans = f"Regarding '{trimmed}': LokSetu AI provides comprehensive guidance for science, agriculture, healthcare, education, and government welfare schemes. 🙏✨"
 
     return {
         "query": trimmed,
@@ -178,6 +186,7 @@ def ask_question(
         "answer": ans,
         "source": "LokSetu AI Engine"
     }
+
 
 
 # Universal Chat Endpoint (POST)

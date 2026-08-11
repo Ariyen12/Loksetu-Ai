@@ -153,7 +153,7 @@ class OpenAISearchService {
   /// Curated Encyclopedia covering Science, Geography, History, Tech, Farming & Health
   static String? _getCuratedEncyclopediaResponse(String lower, String query, String lang) {
     // 1. SKY / ATMOSPHERE / RAIN
-    if (lower.contains("sky blue") || lower.contains("sky is blue") || lower.contains("aasmaan neela") || lower.contains("akax neela")) {
+    if (lower.contains("sky") || lower.contains("aasmaan") || lower.contains("akax")) {
       return "The sky appears blue because of Rayleigh scattering. Earth's atmosphere scatters shorter blue light wavelengths from the Sun more than longer red light wavelengths. 🙏✨";
     }
 
@@ -170,7 +170,7 @@ class OpenAISearchService {
     }
 
     // 2. SCIENCE INVENTIONS
-    if (lower.contains("bulb") || lower.contains("light bulb") || lower.contains("edison")) {
+    if (lower.contains("bulb") || lower.contains("edison") || lower.contains("invented light")) {
       return "The electric light bulb was invented by Thomas Edison in 1879. Hope this helps you! Have a wonderful day! 🙏✨";
     }
 
@@ -186,7 +186,7 @@ class OpenAISearchService {
       return "Photosynthesis is the process where green plants use sunlight, water, and carbon dioxide to create glucose energy and release oxygen. 🌿🌾";
     }
 
-    if (lower.contains("gravity") || lower.contains("newton")) {
+    if (lower.contains("gravity") || lower.contains("newton") || lower.contains("gurutva")) {
       return "Gravity is the universal force that attracts physical bodies toward each other. Sir Isaac Newton formulated the Law of Universal Gravitation. 🍎✨";
     }
 
@@ -223,15 +223,16 @@ class OpenAISearchService {
     }
 
     if (lang.contains("Hindi") || lang.contains("हिंदी")) {
-      return "Aapke sawal '$query' ke liye LokSetu AI aapki madad ke liye tayaar hai! Aap kheti, swasthya, yojana, vigyan, ya shiksha se juda koi bhi sawal pooch sakte hain. 🙏✨";
+      return "Aapke sawal '$query' ke liye LokSetu AI kheti, swasthya, yojana, vigyan, aur shiksha ki puri jankari deta hai. Kripya apna vishay spakht bolein. 🙏✨";
     } else if (lang.contains("Assamese") || lang.contains("অসমীয়া")) {
-      return "Aaponar sawal '$query' babe LokSetu AI sahajyo koribo pare! Aapuni kheti, sasthyo, yojana aru shikshor sawal hudhibo pare. 🙏✨";
+      return "Aaponar sawal '$query' babe LokSetu AI kheti, sasthyo, yojana aru shikshor jankari jogay. 🙏✨";
     } else if (lang.contains("Bengali") || lang.contains("বাংলা")) {
-      return "Apnar prashno '$query' r jonyo LokSetu AI sahajyo korte pare! Apni krishi, swasthya, o sarkari prakalpa niye prashno korte paren. 🙏✨";
+      return "Apnar prashno '$query' r jonyo LokSetu AI krishi, swasthya, o sarkari prakalpa niye sahajyo kare. 🙏✨";
     }
 
-    return "Here is information regarding '$query': LokSetu AI provides dedicated support for agriculture, healthcare, science, education, and government welfare schemes. Feel free to ask more details! 🙏✨";
+    return "Regarding '$query': LokSetu AI provides comprehensive guidance for science, agriculture, healthcare, education, and government welfare schemes. Feel free to ask more details! 🙏✨";
   }
 }
+
 
 

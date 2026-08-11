@@ -34,20 +34,22 @@ class LokSetuAIService {
     final trimmed = query.trim();
     final lower = trimmed.toLowerCase().replaceAll(RegExp(r'[\?\!\.\,\;\:]'), '');
 
-    // 0. LOCAL NETWORK BACKEND SERVER QUERY (CONNECTS TO http://127.0.0.1:8000)
+    // 0. LOCAL NETWORK BACKEND SERVER QUERY (CONNECTS TO http://127.0.0.1:8000/ask)
     try {
-      final backendUrl = Uri.parse('http://127.0.0.1:8000/translate?language=${Uri.encodeComponent(activeLanguage)}&english=${Uri.encodeComponent(trimmed)}');
+      final backendUrl = Uri.parse('http://127.0.0.1:8000/ask?q=${Uri.encodeComponent(trimmed)}&language=${Uri.encodeComponent(activeLanguage)}');
       final resp = await http.get(backendUrl).timeout(const Duration(milliseconds: 1500));
       if (resp.statusCode == 200) {
         final data = jsonDecode(resp.body);
-        if (data['translation'] != null && data['translation'].toString().isNotEmpty) {
+        final answer = data['answer']?.toString() ?? "";
+        if (answer.isNotEmpty && !answer.contains("LokSetu AI is ready to help with")) {
           return AIResponse(
-            text: "${data['translation']} 🙏✨",
+            text: answer,
             detectedLanguage: activeLanguage,
           );
         }
       }
     } catch (_) {}
+
 
     // 1. CASUAL GREETINGS & SMALL TALK MATCHING
 
