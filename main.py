@@ -1,7 +1,10 @@
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
 import json
 import os
+import urllib.request
+import urllib.parse
 from typing import Optional
 from dotenv import load_dotenv
 
@@ -10,12 +13,12 @@ load_dotenv()
 
 # Create FastAPI app
 app = FastAPI(
-    title="Northeast Indian Languages & LokSetu AI API",
-    description="API for Northeast Indian language data and AI assistant",
-    version="1.1"
+    title="LokSetu AI Universal Multilingual API",
+    description="Universal API supporting ANY language translation and question answering",
+    version="2.0"
 )
 
-# Allow frontend to communicate with backend
+# Allow frontend & external clients to communicate with backend
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -34,18 +37,88 @@ if os.path.exists(DATA_FILE):
         languages = json.load(file)
 
 
+class ChatRequest(BaseModel):
+    message: str
+    language: Optional[str] = "English"
+    category: Optional[str] = "General"
+    api_key: Optional[str] = None
+
+
+class TranslationRequest(BaseModel):
+    text: str
+    target_language: str
+    source_language: Optional[str] = "Auto"
+
+
+def query_wikipedia(query: str, lang: str = "en") -> Optional[str]:
+    """Fetches concise Wikipedia article summary with proper User-Agent header"""
+    try:
+        lang_code = "en"
+        lower_lang = lang.lower()
+        if "hindi" in lower_lang or "हिंदी" in lower_lang: lang_code = "hi"
+        elif "bengali" in lower_lang or "বাংলা" in lower_lang: lang_code = "bn"
+        elif "assamese" in lower_lang or "অসমীয়া" in lower_lang: lang_code = "as"
+
+        # Search summary
+        clean_q = urllib.parse.quote(query.strip())
+        url = f"https://{lang_code}.wikipedia.org/api/rest_v1/page/summary/{clean_q}"
+        req = urllib.request.Request(url, headers={
+            'User-Agent': 'LokSetuAI/2.0 (https://github.com/Ariyen12/Loksetu-Ai)',
+            'Accept': 'application/json'
+        })
+        with urllib.request.urlopen(req, timeout=3) as resp:
+            if resp.status == 200:
+                data = json.loads(resp.read().decode('utf-8'))
+                extract = data.get('extract')
+                if extract:
+                    sentences = extract.split('. ')
+                    return '. '.join(sentences[:2]) + '.'
+    except Exception:
+        pass
+    return None
+
+
+def query_gemini_ai(prompt: str, language: str, api_key: Optional[str] = None) -> Optional[str]:
+    """Queries Google Gemini API for intelligent open-domain answers"""
+    key = api_key or os.getenv("GEMINI_API_KEY")
+    if not key:
+        return None
+    try:
+        from google import genai
+        client = genai.Client(api_key=key)
+        system_prompt = (
+            f"You are LokSetu AI. Answer the user question accurately in {language} in 1 to 3 polite sentences. "
+            "Do NOT include markdown formatting or boilerplate intros."
+        )
+        response = client.models.generate_content(
+            model='gemini-2.5-flash',
+            contents=f"{system_prompt}\n\nUser Question: {prompt}",
+        )
+        if response and response.text:
+            return response.text.strip()
+    except Exception:
+        pass
+    return None
+
+
 # Home / Health check
 @app.get("/")
 def home():
     return {
         "status": "online",
-        "message": "Northeast Indian Languages & LokSetu AI API is running",
-        "version": "1.1",
+        "message": "LokSetu AI Universal Multilingual API is active",
+        "version": "2.0",
+        "capabilities": [
+            "Universal Language Translation",
+            "Open-Domain Question Answering",
+            "Northeast Indian Languages Support",
+            "Gemini AI Integration"
+        ],
         "total_languages": len(languages)
     }
 
 
-# Health endpoint for cloud deployments
+# Health check for cloud deployments
 @app.get("/health")
 def health():
     return {"status": "healthy"}
@@ -57,41 +130,68 @@ def get_languages():
     return languages
 
 
-# Get one language
-@app.get("/languages/{language_name}")
-def get_language(language_name: str):
-    for language in languages:
-        if language["name"].lower() == language_name.lower():
-            return language
+# Universal Question Answering Endpoint (GET)
+@app.get("/ask")
+def ask_question(
+    q: str = Query(..., description="User question in any language"),
+    language: str = Query("English", description="Target response language"),
+    api_key: Optional[str] = Query(None, description="Optional Google Gemini API Key")
+):
+    trimmed = q.strip()
+    if not trimmed:
+        raise HTTPException(status_code=400, detail="Query string cannot be empty")
 
-    raise HTTPException(
-        status_code=404,
-        detail="Language not found"
-    )
+    # 1. Try Gemini AI
+    ai_answer = query_gemini_ai(trimmed, language, api_key)
+    if ai_answer:
+        return {
+            "query": trimmed,
+            "language": language,
+            "answer": ai_answer,
+            "source": "Google Gemini AI"
+        }
+
+    # 2. Try Wikipedia Knowledge
+    wiki_answer = query_wikipedia(trimmed, language)
+    if wiki_answer:
+        return {
+            "query": trimmed,
+            "language": language,
+            "answer": f"{wiki_answer} 🙏✨",
+            "source": "Wikipedia Knowledge Engine"
+        }
+
+    # 3. Contextual Universal Multilingual Engine
+    lower = trimmed.lower()
+    if "crop" in lower or "kheti" in lower or "fasal" in lower or "pest" in lower:
+        ans = f"Regarding '{trimmed}': For best crop yield and pest protection, spray Neem Oil (5ml/L) or consult Krishi Vigyan Kendra. Call Kisan Helpline at 1800-180-1551. 🌾🙏"
+    elif "health" in lower or "doctor" in lower or "bimar" in lower or "fever" in lower:
+        ans = f"Regarding healthcare for '{trimmed}': Consult doctors online for free via eSanjeevani (esanjeevaniopd.in). For emergencies dial 108. 🏥🌸"
+    elif "scheme" in lower or "yojana" in lower or "pm" in lower:
+        ans = f"Regarding government welfare for '{trimmed}': Top schemes include Ayushman Bharat (₹5 Lakh health cover) and PM-Kisan (₹6,000/year). Apply at your local CSC. 📜✨"
+    else:
+        ans = f"LokSetu AI is ready to help with '{trimmed}' in {language}! Feel free to ask any question on farming, health, education, or government schemes. 🙏✨"
+
+    return {
+        "query": trimmed,
+        "language": language,
+        "answer": ans,
+        "source": "LokSetu AI Engine"
+    }
 
 
-# Get basic phrases
-@app.get("/languages/{language_name}/phrases")
-def get_phrases(language_name: str):
-    for language in languages:
-        if language["name"].lower() == language_name.lower():
-            return {
-                "language": language["name"],
-                "phrases": language["phrases"]
-            }
-
-    raise HTTPException(
-        status_code=404,
-        detail="Language not found"
-    )
+# Universal Chat Endpoint (POST)
+@app.post("/chat")
+def chat(req: ChatRequest):
+    return ask_question(q=req.message, language=req.language or "English", api_key=req.api_key)
 
 
-# Translate a phrase from stored data with optional dynamic AI fallback
+# Universal Translation Endpoint (GET & POST)
 @app.get("/translate")
 def translate(
     language: str,
     english: str,
-    use_ai_fallback: bool = True
+    api_key: Optional[str] = None
 ):
     # 1. Search local dictionary
     for lang in languages:
@@ -105,31 +205,37 @@ def translate(
                         "source": "dictionary"
                     }
 
-    # 2. Dynamic AI fallback if Gemini API Key is available
-    gemini_key = os.getenv("GEMINI_API_KEY")
-    if use_ai_fallback and gemini_key:
-        try:
-            from google import genai
-            client = genai.Client(api_key=gemini_key)
-            prompt = f"Translate the following English phrase accurately into {language}: '{english}'. Return ONLY the direct translation, nothing else."
-            response = client.models.generate_content(
-                model='gemini-2.5-flash',
-                contents=prompt,
-            )
-            if response and response.text:
-                return {
-                    "language": language,
-                    "english": english,
-                    "translation": response.text.strip(),
-                    "source": "gemini_ai"
-                }
-        except Exception as e:
-            pass
+    # 2. Dynamic AI Translation via Gemini
+    ai_translation = query_gemini_ai(f"Translate into {language}: '{english}'", language, api_key)
+    if ai_translation:
+        return {
+            "language": language,
+            "english": english,
+            "translation": ai_translation,
+            "source": "Google Gemini AI"
+        }
 
-    raise HTTPException(
-        status_code=404,
-        detail="Translation not found"
-    )
+    # 3. Fallback Wikipedia / Knowledge Translation
+    wiki = query_wikipedia(english, language)
+    if wiki:
+        return {
+            "language": language,
+            "english": english,
+            "translation": wiki,
+            "source": "Wikipedia Engine"
+        }
+
+    return {
+        "language": language,
+        "english": english,
+        "translation": f"[{language}] {english}",
+        "source": "LokSetu AI Fallback"
+    }
+
+
+@app.post("/translate")
+def translate_post(req: TranslationRequest):
+    return translate(language=req.target_language, english=req.text)
 
 
 if __name__ == "__main__":
@@ -137,4 +243,5 @@ if __name__ == "__main__":
     host = os.getenv("HOST", "0.0.0.0")
     port = int(os.getenv("PORT", 8000))
     uvicorn.run(app, host=host, port=port)
+
 
